@@ -2,9 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify }                 from 'jose';
 
 const ALLOWED_AUDIENCES = [
-  'https://tec-assets-app.vercel.app',
-  'https://tec-assets.vercel.app',
-  'https://assets.tecosystem.app',
+  'https://tec-commerce-app.vercel.app',
+  'https://commerce.tecosystem.app',
 ];
 
 const usedJtis = new Map<string, number>();
@@ -28,7 +27,6 @@ export async function GET(req: NextRequest) {
   const secret = process.env.SSO_SECRET;
   if (!secret) return NextResponse.json({ error: 'sso_not_configured' }, { status: 503 });
 
-  // ✅ جرب كل الـ audiences
   let payload: Record<string, unknown> | null = null;
   const encoded = new TextEncoder().encode(secret);
 
@@ -44,12 +42,10 @@ export async function GET(req: NextRequest) {
     } catch { /* جرب التالي */ }
   }
 
-  if (!payload) {
-    return NextResponse.redirect(new URL('/', req.url));
-  }
+  if (!payload) return NextResponse.redirect(new URL('/', req.url));
 
   const jti = payload.jti as string;
-  if (!jti)           return NextResponse.json({ error: 'missing_jti' },    { status: 401 });
+  if (!jti)           return NextResponse.json({ error: 'missing_jti' },     { status: 401 });
   if (isJtiUsed(jti)) return NextResponse.json({ error: 'replay_detected' }, { status: 401 });
   markJtiUsed(jti);
 
