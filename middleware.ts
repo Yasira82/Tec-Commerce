@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// ── تعديل حسب الـ domain ──────────────────────────────────
-const PROTECTED_ROUTES = ['/app', '/dashboard', '/profile', '/settings'];
-
+const PROTECTED_ROUTES  = ['/app', '/dashboard', '/profile', '/settings'];
 const CSRF_SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
-
-const CSRF_PROTECTED = [
+const CSRF_PROTECTED    = [
   '/api/auth/logout',
   '/api/auth/refresh',
   '/api/bff/',
@@ -15,7 +12,6 @@ export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const method       = req.method.toUpperCase();
 
-  // ── Page protection ────────────────────────────────────────
   const isProtected = PROTECTED_ROUTES.some(r => pathname.startsWith(r));
   if (isProtected) {
     const token = req.cookies.get('tec_access_token')?.value;
@@ -26,7 +22,6 @@ export function middleware(req: NextRequest) {
     }
   }
 
-  // ── CSRF verification ──────────────────────────────────────
   if (!CSRF_SAFE_METHODS.has(method)) {
     const isCsrfProtected = CSRF_PROTECTED.some(r => pathname.startsWith(r));
     if (isCsrfProtected) {
