@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { SignJWT } from 'jose';
+import { SignJWT }                   from 'jose';
 
 const ALLOWED_TARGETS = [
-  'https://tec-assets-app.vercel.app',
-  'https://assets.pi',
+  'https://tec-commerce-app.vercel.app',
+  'https://commerce.tecosystem.app',
 ];
 
 export async function GET(req: NextRequest) {
@@ -11,8 +11,7 @@ export async function GET(req: NextRequest) {
   const userCookie  = req.cookies.get('tec_user')?.value;
 
   if (!accessToken || !userCookie) {
-    const loginUrl = new URL('/', req.url);
-    return NextResponse.redirect(loginUrl);
+    return NextResponse.redirect(new URL('/', req.url));
   }
 
   const target = req.nextUrl.searchParams.get('target');
@@ -30,10 +29,7 @@ export async function GET(req: NextRequest) {
     const jti     = crypto.randomUUID();
     const encoded = new TextEncoder().encode(secret);
 
-    const token = await new SignJWT({
-      accessToken,
-      user,
-    })
+    const token = await new SignJWT({ accessToken, user })
       .setProtectedHeader({ alg: 'HS256' })
       .setSubject(user.id)
       .setIssuer('tec.pi')
@@ -45,7 +41,6 @@ export async function GET(req: NextRequest) {
 
     const redirectUrl = `${target}/api/auth/sso-callback?token=${encodeURIComponent(token)}`;
     return NextResponse.redirect(redirectUrl);
-
   } catch {
     return NextResponse.json({ error: 'sso_failed' }, { status: 500 });
   }
