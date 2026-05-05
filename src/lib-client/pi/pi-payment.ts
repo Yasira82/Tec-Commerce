@@ -14,27 +14,17 @@ const getCsrfToken = (): string => {
     .find(r => r.startsWith('tec_csrf='))?.split('=')?.[1] ?? '';
 };
 
-export const createU2APayment = async (
+export const createU2APayment = (
   amount:   number,
   memo:     string,
   metadata: Record<string, unknown> = {},
 ): Promise<PaymentResult> => {
-  if (!window.Pi) {
-    return { success: false, status: 'failed', message: 'Open in Pi Browser' };
-  }
-
-  if (!window.__TEC_PI_READY) {
-    return { success: false, status: 'failed', message: 'Pi SDK not ready yet — try again' };
-  }
-
-  try {
-    await window.Pi.authenticate(['username', 'payments'], () => {});
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Authentication failed';
-    return { success: false, status: 'failed', message: msg };
-  }
-
   return new Promise((resolve) => {
+    if (!window.Pi) {
+      resolve({ success: false, status: 'failed', message: 'Open in Pi Browser' });
+      return;
+    }
+
     const paymentData: PiPaymentData = { amount, memo, metadata };
 
     const callbacks: PiPaymentCallbacks = {
@@ -49,9 +39,7 @@ export const createU2APayment = async (
             },
             body: JSON.stringify({ paymentId }),
           });
-          if (!res.ok) {
-            console.error('[Payment] Approve failed:', res.status);
-          }
+          if (!res.ok) console.error('[Payment] Approve failed:', res.status);
         } catch (e) {
           console.error('[Payment] Approve error:', e);
         }
@@ -72,11 +60,7 @@ export const createU2APayment = async (
             resolve({ success: true, status: 'completed', txid, paymentId });
           } else {
             const data = await res.json().catch(() => ({}));
-            resolve({
-              success: false,
-              status:  'failed',
-              message: data?.message ?? 'Completion failed',
-            });
+            resolve({ success: false, status: 'failed', message: data?.message ?? 'Completion failed' });
           }
         } catch {
           resolve({ success: false, status: 'failed', message: 'Network error' });
