@@ -3,14 +3,6 @@
 import { useEffect } from 'react';
 import { usePiAuth } from '@/lib-client/hooks/usePiAuth';
 
-const COMMERCE_URL = 'https://tec-commerce-app.vercel.app';
-
-const HUB_SSO = 'https://tec-app-frontend.vercel.app/api/auth/sso?target=' +
-  encodeURIComponent(COMMERCE_URL);
-
-const HUB_LOGIN = 'https://tec-app-frontend.vercel.app/?returnTo=' +
-  encodeURIComponent(COMMERCE_URL);
-
 const getTokenFromCookie = (): string | null => {
   if (typeof document === 'undefined') return null;
   const match = document.cookie.split('; ').find(r => r.startsWith('tec_access_token='));
@@ -26,8 +18,8 @@ export default function CommerceLanding() {
     if (token || isAuthenticated) {
       window.location.href = '/app';
     } else {
-      // ✅ لو مش logged in — روح لـ Hub login مع returnTo
-      window.location.href = HUB_LOGIN;
+      // ✅ زي Assets — روح Hub مباشرة
+      window.location.href = 'https://tec-app-frontend.vercel.app';
     }
   }, [isLoading, isAuthenticated]);
 
