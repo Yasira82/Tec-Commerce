@@ -3,11 +3,55 @@ import { NextRequest }                from 'next/server';
 import { z }                          from 'zod';
 
 const CreateProductSchema = z.object({
-  title:       z.string().min(1),
-  description: z.string().optional(),
-  price:       z.number().positive(),
-  stock:       z.number().int().min(0),
-  category:    z.string().optional(),
+  title:        z.string().min(1),
+  description:  z.string().optional(),
+  price:        z.number().positive(),
+  stock:        z.number().int().min(0),
+  category:     z.string().optional(),
+  condition:    z.string().optional(),
+  images:       z.array(z.string()).optional(),
+  shipping:     z.object({
+    country:       z.string(),
+    city:          z.string(),
+    shipsTo:       z.array(z.string()),
+    shippingCost:  z.number(),
+    estimatedDays: z.string(),
+  }).optional(),
+  contact:      z.object({
+    whatsapp: z.string().optional(),
+    telegram: z.string().optional(),
+    email:    z.string().optional(),
+  }).optional(),
+  warranty:     z.string().optional(),
+  returnPolicy: z.string().optional(),
+});
+
+const DEFAULT_SHIPPING = {
+  country:       'Unknown',
+  city:          'Unknown',
+  shipsTo:       [],
+  shippingCost:  0,
+  estimatedDays: 'Contact seller',
+};
+
+const DEFAULT_CONTACT = {
+  whatsapp: undefined,
+  telegram: undefined,
+  email:    undefined,
+};
+
+const normalizeProduct = (p: Record<string, unknown>) => ({
+  ...p,
+  images:       Array.isArray(p.images) ? p.images : [],
+  rating:       Number(p.rating)      || 0,
+  reviewCount:  Number(p.reviewCount) || 0,
+  condition:    p.condition           || 'new',
+  shipping:     (p.shipping && typeof p.shipping === 'object')
+    ? p.shipping
+    : DEFAULT_SHIPPING,
+  contact:      (p.contact && typeof p.contact === 'object')
+    ? p.contact
+    : DEFAULT_CONTACT,
 });
 
 export const GET = createHandler({
@@ -35,7 +79,8 @@ export const GET = createHandler({
 
     if (!res.ok) return { products: [] };
     const data = await res.json();
-    return { products: data?.data?.products ?? [] };
+    const raw  = data?.data?.products ?? [];
+    return { products: raw.map(normalizeProduct) };
   },
 });
 
@@ -60,6 +105,7 @@ export const POST = createHandler({
     }
 
     const data = await res.json();
-    return { product: data?.data?.product };
+    const raw  = data?.data?.product ?? {};
+    return { product: normalizeProduct(raw) };
   },
 });
