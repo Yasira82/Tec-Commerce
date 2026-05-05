@@ -202,23 +202,30 @@ export function PiTestClient() {
   }, [log]);
 
   const handlePayment = useCallback(async () => {
-    if (authStatus !== 'done') { log('warn', 'Authenticate first'); return; }
-    log('info', 'Creating payment (1π)…');
-    setPayStatus('loading');
-    try {
-      const result = await createU2APayment(1, 'TEC sandbox test', { source: 'pi-test-page' });
-      if (result.status === 'cancelled') {
-        setPayStatus('cancelled');
-        log('warn', `Cancelled (id: ${result.paymentId ?? 'n/a'})`);
-      } else {
-        setPayStatus('done');
-        log('success', `✅ Done! id=${result.paymentId} txid=${result.txid}`);
-      }
-    } catch (err) {
+  if (authStatus !== 'done') { log('warn', 'Authenticate first'); return; }
+  log('info', 'Creating payment (1π)…');
+  setPayStatus('loading');
+  try {
+    const result = await createU2APayment(
+      1,
+      'TEC Commerce test',
+      { source: 'pi-test-page' },
+    );
+    if (result.status === 'cancelled') {
+      setPayStatus('cancelled');
+      log('warn', `Cancelled (id: ${result.paymentId ?? 'n/a'})`);
+    } else if (result.status === 'completed') {
+      setPayStatus('done');
+      log('success', `✅ Done! id=${result.paymentId} txid=${result.txid}`);
+    } else {
       setPayStatus('error');
-      log('error', `Payment error: ${err instanceof Error ? err.message : String(err)}`);
+      log('error', `Failed: ${result.message ?? 'unknown'}`);
     }
-  }, [authStatus, log]);
+  } catch (err) {
+    setPayStatus('error');
+    log('error', `Payment error: ${err instanceof Error ? err.message : String(err)}`);
+  }
+}, [authStatus, log]);
 
   const clearLogs = () => setLogs([]);
 
