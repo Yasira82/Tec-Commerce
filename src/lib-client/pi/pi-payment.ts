@@ -23,7 +23,12 @@ export const createU2APayment = async (
     return { success: false, status: 'failed', message: 'Open in Pi Browser' };
   }
 
-  // ✅ Ensure payments scope before creating payment
+  // ✅ انتظر الـ SDK يكون ready
+  if (!window.__TEC_PI_READY) {
+    return { success: false, status: 'failed', message: 'Pi SDK not ready yet — try again' };
+  }
+
+  // ✅ Ensure payments scope
   try {
     await window.Pi.authenticate(['username', 'payments'], () => {});
   } catch (e) {
@@ -32,6 +37,9 @@ export const createU2APayment = async (
   }
 
   return new Promise((resolve) => {
+    // ... باقي الكود
+  });
+};
     const paymentData: PiPaymentData = { amount, memo, metadata };
 
     const callbacks: PiPaymentCallbacks = {
