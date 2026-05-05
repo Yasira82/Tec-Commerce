@@ -3,8 +3,13 @@
 import { useEffect } from 'react';
 import { usePiAuth } from '@/lib-client/hooks/usePiAuth';
 
-const HUB_SSO = 'https://hub.tecosystem.app/api/auth/sso?target=' +
-  encodeURIComponent('https://tec-commerce-app.vercel.app');
+const COMMERCE_URL = 'https://tec-commerce-app.vercel.app';
+
+const HUB_SSO = 'https://tec-app-frontend.vercel.app/api/auth/sso?target=' +
+  encodeURIComponent(COMMERCE_URL);
+
+const HUB_LOGIN = 'https://tec-app-frontend.vercel.app/?returnTo=' +
+  encodeURIComponent(COMMERCE_URL);
 
 const getTokenFromCookie = (): string | null => {
   if (typeof document === 'undefined') return null;
@@ -21,7 +26,8 @@ export default function CommerceLanding() {
     if (token || isAuthenticated) {
       window.location.href = '/app';
     } else {
-      window.location.href = HUB_SSO;
+      // ✅ لو مش logged in — روح لـ Hub login مع returnTo
+      window.location.href = HUB_LOGIN;
     }
   }, [isLoading, isAuthenticated]);
 
