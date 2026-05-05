@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
 
     const token = req.cookies.get('tec_access_token')?.value;
 
-    const res = await fetch(`${GATEWAY}/api/v1/payments/complete`, {
+    const res = await fetch(`${GATEWAY}/api/v1/payment/complete`, {
       method:  'POST',
       headers: {
         'Content-Type':   'application/json',
