@@ -10,7 +10,7 @@ import { OrdersTab }                        from './components/OrdersTab';
 import { AddProductForm }                   from './components/AddProductForm';
 import { Product, Order, MainTab }          from './types';
 
-const HUB_URL = process.env.NEXT_PUBLIC_HUB_URL ?? 'https://hub.tecosystem.app';
+const HUB_URL = 'https://tec-app-frontend.vercel.app';
 const SSO_URL = `${HUB_URL}/api/auth/sso?target=` +
   encodeURIComponent('https://tec-commerce-app.vercel.app');
 
@@ -179,7 +179,10 @@ function CommercePageInner() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button className="btn"
-            onClick={() => { window.location.href = HUB_URL; }}
+            onClick={() => {
+  window.location.href = `${HUB_URL}/api/auth/sso?target=` +
+    encodeURIComponent('https://tec-commerce-app.vercel.app');
+}}
             style={{ background: '#ffffff08', border: '1px solid #ffffff10',
               borderRadius: 12, padding: '6px 10px', color: '#d4af37',
               cursor: 'pointer', display: 'flex', flexDirection: 'column',
