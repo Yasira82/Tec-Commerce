@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react';
 import { usePiAuth } from '@/lib-client/hooks/usePiAuth';
-import PiSdkLoader   from '@/components/PiSdkLoader';
 
 const HUB_SSO = 'https://hub.tecosystem.app/api/auth/sso?target=' +
   encodeURIComponent('https://tec-commerce-app.vercel.app');
@@ -27,34 +26,28 @@ export default function CommerceLanding() {
   }, [isLoading, isAuthenticated]);
 
   return (
-    <>
-      <PiSdkLoader
-        sandbox={process.env.NEXT_PUBLIC_PI_SANDBOX === 'true'}
-        timeout={15000}
-      />
+    <div style={{
+      minHeight: '100vh', background: '#020205',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      flexDirection: 'column', gap: 16,
+      fontFamily: '-apple-system, BlinkMacSystemFont, system-ui, sans-serif',
+    }}>
       <div style={{
-        minHeight: '100vh', background: '#020205',
+        width: 52, height: 52, borderRadius: 16,
+        background: 'linear-gradient(135deg,#d4af37,#b8882a)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexDirection: 'column', gap: 16,
-        fontFamily: '-apple-system, BlinkMacSystemFont, system-ui, sans-serif',
-      }}>
-        <div style={{
-          width: 52, height: 52, borderRadius: 16,
-          background: 'linear-gradient(135deg,#d4af37,#b8882a)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 26,
-        }}>🛒</div>
-        <div style={{ fontSize: 20, fontWeight: 800, color: '#d4af37' }}>Commerce</div>
-        <div style={{ fontSize: 12, color: '#4a4a5a' }}>TEC Ecosystem</div>
-        <div style={{
-          width: 24, height: 24, borderRadius: '50%',
-          border: '3px solid #d4af3730',
-          borderTop: '3px solid #d4af37',
-          animation: 'spin 0.8s linear infinite',
-          marginTop: 8,
-        }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      </div>
-    </>
+        fontSize: 26,
+      }}>🛒</div>
+      <div style={{ fontSize: 20, fontWeight: 800, color: '#d4af37' }}>Commerce</div>
+      <div style={{ fontSize: 12, color: '#4a4a5a' }}>TEC Ecosystem</div>
+      <div style={{
+        width: 24, height: 24, borderRadius: '50%',
+        border: '3px solid #d4af3730',
+        borderTop: '3px solid #d4af37',
+        animation: 'spin 0.8s linear infinite',
+        marginTop: 8,
+      }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
   );
 }
