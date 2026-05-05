@@ -1,50 +1,69 @@
-export interface Asset {
-  id:            string;
-  name:          string;
-  asset_type:    string;
-  value:         number | string;
-  currency:      string;
-  status:        string;
-  created_at:    string;
-  listing_id:    string | null;
-  listing_price: number | null;
-  owner_id?:     string;                  // ✅ أضف
-  metadata?:     Record<string, unknown>;
+export type MainTab = 'products' | 'orders' | 'sell' | 'search';
+
+export type ProductCategory =
+  | 'Electronics'
+  | 'Fashion'
+  | 'Home'
+  | 'Food'
+  | 'Health'
+  | 'Sports'
+  | 'Books'
+  | 'Art'
+  | 'Services'
+  | 'Other';
+
+export interface ShippingInfo {
+  country:         string;
+  city:            string;
+  shipsTo:         string[];
+  shippingCost:    number;
+  estimatedDays:   string;
 }
 
-export interface Listing {
-  id:          string;
-  asset_id:    string;
-  seller_id:   string;
-  price:       number;
-  currency:    string;
-  status:      string;
-  title:       string;
-  description: string;
-  category:    string;
-  created_at:  string;
+export interface SellerContact {
+  whatsapp?:  string;
+  telegram?:  string;
+  email?:     string;
 }
 
-export interface Purchase {
+export interface Product {
+  id:           string;
+  title:        string;
+  description:  string;
+  price:        number;
+  stock:        number;
+  category:     ProductCategory;
+  images:       string[];
+  sellerId:     string;
+  sellerName?:  string;
+  shipping:     ShippingInfo;
+  contact:      SellerContact;
+  rating:       number;
+  reviewCount:  number;
+  warranty?:    string;
+  returnPolicy?: string;
+  condition:    'new' | 'used' | 'refurbished';
+  createdAt:    string;
+}
+
+export interface Review {
   id:        string;
-  assetId:   string;
-  sellerId:  string;
-  buyerId:   string;
-  price:     number;
-  currency:  string;
-  status:    string;
-  soldAt:    string;
-  asset: {
-    slug:     string;
-    category: string;
-    metadata: Record<string, unknown>;
-  };
+  userId:    string;
+  username:  string;
+  rating:    number;
+  comment:   string;
+  createdAt: string;
 }
 
-export interface WalletData {
-  balance:  number;
-  currency: string;
-  walletId: string | null;
+export interface Order {
+  id:          string;
+  product_id:  string;
+  product?:    Product;
+  buyer_id:    string;
+  status:      'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
+  total:       number;
+  payment_id?: string;
+  txid?:       string;
+  createdAt:   string;
+  review?:     Review;
 }
-
-export type MainTab = 'assets' | 'portfolio' | 'marketplace' | 'purchases';
