@@ -180,9 +180,9 @@ function CommercePageInner() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button className="btn"
             onClick={() => {
-  window.location.href = `${HUB_URL}/api/auth/sso?target=` +
-    encodeURIComponent('https://tec-commerce-app.vercel.app');
-}}
+              // ✅ زي Assets — روح Hub مباشرة
+              window.location.href = `${HUB_URL}/hub`;
+            }}
             style={{ background: '#ffffff08', border: '1px solid #ffffff10',
               borderRadius: 12, padding: '6px 10px', color: '#d4af37',
               cursor: 'pointer', display: 'flex', flexDirection: 'column',
@@ -211,9 +211,9 @@ function CommercePageInner() {
             textTransform: 'uppercase', marginBottom: 12 }}>COMMERCE OVERVIEW</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
             {[
-              { label: 'Products',  value: products.length.toString(),      icon: '🛒' },
-              { label: 'My Items',  value: myProductsCount.toString(),       icon: '📦' },
-              { label: 'Orders',    value: orders.length.toString(),         icon: '🧾' },
+              { label: 'Products', value: products.length.toString(),  icon: '🛒' },
+              { label: 'My Items', value: myProductsCount.toString(),   icon: '📦' },
+              { label: 'Orders',   value: orders.length.toString(),     icon: '🧾' },
             ].map(s => (
               <div key={s.label} style={{ background: '#ffffff05', borderRadius: 12, padding: '10px 12px', textAlign: 'center' }}>
                 <div style={{ fontSize: 18, marginBottom: 4 }}>{s.icon}</div>
@@ -310,4 +310,4 @@ function CommercePageInner() {
 
 export default function CommercePage() {
   return <ErrorBoundary><CommercePageInner /></ErrorBoundary>;
-      }
+          }
