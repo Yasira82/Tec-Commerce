@@ -5,24 +5,40 @@ export const GET = createHandler({
   handler: async ({ ctx, req }) => {
     const token = req.cookies.get('tec_access_token')?.value ?? '';
 
-    const res = await fetch(
-      `${GATEWAY_URL}/api/wallets?userId=${encodeURIComponent(ctx.userId)}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'x-request-id':  ctx.requestId,
+    const controller = new AbortController();
+    const timer      = setTimeout(() => controller.abort(), 8000);
+
+    let res: Response;
+    try {
+      res = await fetch(
+        `${GATEWAY_URL}/api/wallets?userId=${encodeURIComponent(ctx.userId)}`,
+        {
+          headers: {
+            'Authorization':  `Bearer ${token}`,
+            'x-request-id':   ctx.requestId,
+            'x-internal-key': process.env.INTERNAL_SECRET ?? '',
+          },
+          cache:  'no-store',
+          signal: controller.signal,
         },
-        cache: 'no-store',
-      },
-    );
+      );
+    } catch {
+      return { balance: 0, currency: 'PI', address: null, walletId: null };
+    } finally {
+      clearTimeout(timer);
+    }
 
     if (!res.ok) return { balance: 0, currency: 'PI', address: null, walletId: null };
 
     const data = await res.json().catch(() => ({}));
 
     interface Wallet {
-      id: string; balance: number; currency: string;
-      is_primary: boolean; wallet_address: string | null; updated_at: string;
+      id:             string;
+      balance:        number;
+      currency:       string;
+      is_primary:     boolean;
+      wallet_address: string | null;
+      updated_at:     string;
     }
 
     const wallets: Wallet[] = data?.wallets ?? data?.data?.wallets ?? [];
