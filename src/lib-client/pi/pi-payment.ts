@@ -14,17 +14,24 @@ const getCsrfToken = (): string => {
     .find(r => r.startsWith('tec_csrf='))?.split('=')?.[1] ?? '';
 };
 
-export const createU2APayment = (
+export const createU2APayment = async (
   amount:   number,
   memo:     string,
   metadata: Record<string, unknown> = {},
 ): Promise<PaymentResult> => {
-  return new Promise((resolve) => {
-    if (!window.Pi) {
-      resolve({ success: false, status: 'failed', message: 'Open in Pi Browser' });
-      return;
-    }
+  if (!window.Pi) {
+    return { success: false, status: 'failed', message: 'Open in Pi Browser' };
+  }
 
+  // ✅ Ensure payments scope before creating payment
+  try {
+    await window.Pi.authenticate(['username', 'payments'], () => {});
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Authentication failed';
+    return { success: false, status: 'failed', message: msg };
+  }
+
+  return new Promise((resolve) => {
     const paymentData: PiPaymentData = { amount, memo, metadata };
 
     const callbacks: PiPaymentCallbacks = {
@@ -39,12 +46,10 @@ export const createU2APayment = (
             },
             body: JSON.stringify({ paymentId }),
           });
-          // ✅ مش بنعمل reject — بنسيب Pi يكمل حتى لو approve فشل
           if (!res.ok) {
             console.error('[Payment] Approve failed:', res.status);
           }
         } catch (e) {
-          // ✅ مش بنعمل reject — بنسيب Pi يكمل
           console.error('[Payment] Approve error:', e);
         }
       },
