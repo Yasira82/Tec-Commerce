@@ -30,7 +30,7 @@ export const createU2APayment = (
     const callbacks: PiPaymentCallbacks = {
       onReadyForServerApproval: async (paymentId: string) => {
         try {
-          await fetch('/api/payment/approve', {
+          const res = await fetch('/api/payment/approve', {
             method:      'POST',
             credentials: 'include',
             headers: {
@@ -39,8 +39,13 @@ export const createU2APayment = (
             },
             body: JSON.stringify({ paymentId }),
           });
-        } catch {
-          resolve({ success: false, status: 'failed', message: 'Approval failed' });
+          // ✅ مش بنعمل reject — بنسيب Pi يكمل حتى لو approve فشل
+          if (!res.ok) {
+            console.error('[Payment] Approve failed:', res.status);
+          }
+        } catch (e) {
+          // ✅ مش بنعمل reject — بنسيب Pi يكمل
+          console.error('[Payment] Approve error:', e);
         }
       },
 
@@ -58,7 +63,12 @@ export const createU2APayment = (
           if (res.ok) {
             resolve({ success: true, status: 'completed', txid, paymentId });
           } else {
-            resolve({ success: false, status: 'failed', message: 'Completion failed' });
+            const data = await res.json().catch(() => ({}));
+            resolve({
+              success: false,
+              status:  'failed',
+              message: data?.message ?? 'Completion failed',
+            });
           }
         } catch {
           resolve({ success: false, status: 'failed', message: 'Network error' });
