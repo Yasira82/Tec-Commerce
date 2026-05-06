@@ -38,11 +38,19 @@ export const createU2APayment = (
               'x-csrf-token': getCsrfToken(),
             },
             body: JSON.stringify({
-              paymentId,                // ✅ BFF يحوله لـ payment_id
-              pi_payment_id: paymentId, // ✅ Pi payment ID
+              paymentId,
+              pi_payment_id: paymentId,
             }),
           });
-          if (!res.ok) console.error('[Payment] Approve failed:', res.status);
+          if (!res.ok) {
+            console.error('[Payment] Approve failed:', res.status);
+            return;
+          }
+          // ✅ خزّن الـ payment_id (UUID) من الـ response
+          const data = await res.json().catch(() => ({}));
+          if (data.payment_id) {
+            (window as Record<string, unknown>).__tec_payment_id = data.payment_id;
+          }
         } catch (e) {
           console.error('[Payment] Approve error:', e);
         }
@@ -50,6 +58,9 @@ export const createU2APayment = (
 
       onReadyForServerCompletion: async (paymentId: string, txid: string) => {
         try {
+          // ✅ استخدم الـ UUID المخزن لو موجود
+          const dbPaymentId = (window as Record<string, unknown>).__tec_payment_id as string ?? paymentId;
+
           const res = await fetch('/api/payment/complete', {
             method:      'POST',
             credentials: 'include',
@@ -57,7 +68,10 @@ export const createU2APayment = (
               'Content-Type': 'application/json',
               'x-csrf-token': getCsrfToken(),
             },
-            body: JSON.stringify({ paymentId, txid }),
+            body: JSON.stringify({
+              paymentId: dbPaymentId,
+              txid,
+            }),
           });
           if (res.ok) {
             resolve({ success: true, status: 'completed', txid, paymentId });
