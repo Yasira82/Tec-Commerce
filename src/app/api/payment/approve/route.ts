@@ -17,8 +17,8 @@ export async function POST(req: NextRequest) {
     const token = req.cookies.get('tec_access_token')?.value;
     console.log('[approve] token exists:', !!token);
 
+    // ✅ بنبعت pi_payment_id بس — مش payment_id (ده UUID في الـ DB)
     const requestBody = {
-      payment_id:    paymentId,
       pi_payment_id: pi_payment_id ?? paymentId,
     };
 
