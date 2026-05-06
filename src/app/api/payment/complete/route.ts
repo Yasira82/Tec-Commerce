@@ -5,6 +5,7 @@ const GATEWAY = process.env.NEXT_PUBLIC_API_GATEWAY_URL!;
 export async function POST(req: NextRequest) {
   try {
     const { paymentId, txid } = await req.json();
+
     if (!paymentId || !txid) {
       return NextResponse.json({ error: 'paymentId and txid required' }, { status: 400 });
     }
@@ -18,7 +19,10 @@ export async function POST(req: NextRequest) {
         'Authorization':  `Bearer ${token ?? ''}`,
         'x-internal-key': process.env.INTERNAL_SECRET ?? '',
       },
-      body: JSON.stringify({ paymentId, txid }),
+      body: JSON.stringify({
+        payment_id:     paymentId,  // ✅ الاسم الصح
+        transaction_id: txid,       // ✅ الاسم الصح
+      }),
     });
 
     const data = await res.json().catch(() => ({}));
