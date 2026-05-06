@@ -8,6 +8,9 @@ export interface PaymentResult {
   message?:   string;
 }
 
+// ✅ typed window extension
+const w = window as unknown as Record<string, unknown>;
+
 const getCsrfToken = (): string => {
   if (typeof document === 'undefined') return '';
   return document.cookie.split('; ')
@@ -49,7 +52,7 @@ export const createU2APayment = (
           // ✅ خزّن الـ payment_id (UUID) من الـ response
           const data = await res.json().catch(() => ({}));
           if (data.payment_id) {
-            (window as Record<string, unknown>).__tec_payment_id = data.payment_id;
+            w.__tec_payment_id = data.payment_id;
           }
         } catch (e) {
           console.error('[Payment] Approve error:', e);
@@ -59,7 +62,7 @@ export const createU2APayment = (
       onReadyForServerCompletion: async (paymentId: string, txid: string) => {
         try {
           // ✅ استخدم الـ UUID المخزن لو موجود
-          const dbPaymentId = (window as Record<string, unknown>).__tec_payment_id as string ?? paymentId;
+          const dbPaymentId = (w.__tec_payment_id as string) ?? paymentId;
 
           const res = await fetch('/api/payment/complete', {
             method:      'POST',
