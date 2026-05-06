@@ -37,7 +37,10 @@ export const createU2APayment = (
               'Content-Type': 'application/json',
               'x-csrf-token': getCsrfToken(),
             },
-            body: JSON.stringify({ paymentId }),
+            body: JSON.stringify({
+              paymentId,                // ✅ BFF يحوله لـ payment_id
+              pi_payment_id: paymentId, // ✅ Pi payment ID
+            }),
           });
           if (!res.ok) console.error('[Payment] Approve failed:', res.status);
         } catch (e) {
