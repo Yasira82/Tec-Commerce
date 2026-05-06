@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { usePiAuth }                        from '@/lib-client/hooks/usePiAuth';
 import { ErrorBoundary }                    from '@/components/ErrorBoundary';
-import { createU2APayment }                 from '@/lib-client/pi/pi-payment';
 import { CommerceSkeleton }                 from './components/CommerceSkeleton';
 import { ProductsTab }                      from './components/ProductsTab';
 import { OrdersTab }                        from './components/OrdersTab';
@@ -35,16 +34,10 @@ function CommercePageInner() {
   const [dataLoading, setDataLoading] = useState(true);
   const [toast,       setToast]       = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
-  const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
+  const showToast = useCallback((msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
-  };
-
-  useEffect(() => {
-    if (isLoading) return;
-    const token = getTokenFromCookie();
-    if (!token && !isAuthenticated) window.location.href = SSO_URL;
-  }, [isLoading, isAuthenticated]);
+  }, []);
 
   const fetchProducts = useCallback(async () => {
     try {
@@ -65,42 +58,63 @@ function CommercePageInner() {
     } catch { /* silent */ }
   }, []);
 
-  const handleBuy = useCallback(async (product: Product) => {
-    if (!window.Pi) { showToast('Open in Pi Browser to pay', 'error'); return; }
+  // ✅ Check auth + handle payment return from Hub
+  useEffect(() => {
+    if (isLoading) return;
+    const token = getTokenFromCookie();
+    if (!token && !isAuthenticated) {
+      window.location.href = SSO_URL;
+      return;
+    }
 
-    try {
-      const result = await createU2APayment(
-        product.price + (product.shipping.shippingCost ?? 0),
-        `Buy ${product.title} — TEC Commerce`,
-        { product_id: product.id, type: 'commerce_purchase' },
-      );
+    // ✅ اقرأ نتيجة الـ payment لو رجعنا من Hub
+    const params        = new URLSearchParams(window.location.search);
+    const paymentStatus = params.get('payment_status');
 
-      if (result.success && result.status === 'completed') {
-        const res = await fetch('/api/bff/commerce/orders', {
+    if (paymentStatus === 'success') {
+      const productId = params.get('product_id') ?? '';
+      const txid      = params.get('txid')       ?? '';
+      const paymentId = params.get('payment_id') ?? '';
+
+      showToast('Payment successful! 🎉');
+      setActiveTab('orders');
+
+      if (productId) {
+        fetch('/api/bff/commerce/orders', {
           method:      'POST',
           credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
             'x-csrf-token': getCsrfToken(),
           },
-          body: JSON.stringify({
-            product_id: product.id,
-            payment_id: result.paymentId,
-            txid:       result.txid,
-          }),
-        });
-        if (res.ok) {
-          showToast('Payment successful! 🎉');
-          fetchOrders();
-          setActiveTab('orders');
-        }
-      } else if (result.status === 'cancelled') {
-        showToast('Payment cancelled', 'error');
-      } else {
-        showToast(result.message ?? 'Payment failed', 'error');
+          body: JSON.stringify({ product_id: productId, payment_id: paymentId, txid }),
+        }).then(() => fetchOrders()).catch(() => {});
       }
-    } catch { showToast('Payment failed', 'error'); }
-  }, [fetchOrders]);
+
+      // ✅ امسح الـ params من الـ URL
+      window.history.replaceState({}, '', '/app');
+    }
+  }, [isLoading, isAuthenticated, showToast, fetchOrders]);
+
+  // ✅ handleBuy — روح Hub عشان يعمل payment
+  const handleBuy = useCallback((product: Product) => {
+    if (!window.Pi) { showToast('Open in Pi Browser to pay', 'error'); return; }
+
+    const amount = product.price + (product.shipping.shippingCost ?? 0);
+    const memo   = `Buy ${product.title} — TEC Commerce`;
+
+    const params = new URLSearchParams({
+      action:     'buy',
+      product_id: product.id,
+      amount:     String(amount),
+      memo,
+      return_url: 'https://tec-commerce-app.vercel.app/app',
+      source:     'commerce',
+    });
+
+    // ✅ Hub يعمل payment بـ Hub credentials
+    window.location.href = `${HUB_URL}/hub/pay?${params.toString()}`;
+  }, [showToast]);
 
   const handleDelete = useCallback(async (productId: string) => {
     try {
@@ -111,7 +125,7 @@ function CommercePageInner() {
       });
       if (res.ok) { showToast('Product deleted'); fetchProducts(); }
     } catch { showToast('Failed to delete', 'error'); }
-  }, [fetchProducts]);
+  }, [fetchProducts, showToast]);
 
   const handleReview = useCallback(async (orderId: string, rating: number, comment: string) => {
     try {
@@ -126,7 +140,7 @@ function CommercePageInner() {
       });
       if (res.ok) { showToast('Review submitted! ⭐'); fetchOrders(); }
     } catch { showToast('Failed to submit review', 'error'); }
-  }, [fetchOrders]);
+  }, [fetchOrders, showToast]);
 
   useEffect(() => { fetchProducts(); fetchOrders(); }, [fetchProducts, fetchOrders]);
 
@@ -179,10 +193,7 @@ function CommercePageInner() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button className="btn"
-            onClick={() => {
-              // ✅ زي Assets — روح Hub مباشرة
-              window.location.href = `${HUB_URL}/hub`;
-            }}
+            onClick={() => { window.location.href = `${HUB_URL}/hub`; }}
             style={{ background: '#ffffff08', border: '1px solid #ffffff10',
               borderRadius: 12, padding: '6px 10px', color: '#d4af37',
               cursor: 'pointer', display: 'flex', flexDirection: 'column',
@@ -211,9 +222,9 @@ function CommercePageInner() {
             textTransform: 'uppercase', marginBottom: 12 }}>COMMERCE OVERVIEW</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
             {[
-              { label: 'Products', value: products.length.toString(),  icon: '🛒' },
-              { label: 'My Items', value: myProductsCount.toString(),   icon: '📦' },
-              { label: 'Orders',   value: orders.length.toString(),     icon: '🧾' },
+              { label: 'Products', value: products.length.toString(), icon: '🛒' },
+              { label: 'My Items', value: myProductsCount.toString(),  icon: '📦' },
+              { label: 'Orders',   value: orders.length.toString(),    icon: '🧾' },
             ].map(s => (
               <div key={s.label} style={{ background: '#ffffff05', borderRadius: 12, padding: '10px 12px', textAlign: 'center' }}>
                 <div style={{ fontSize: 18, marginBottom: 4 }}>{s.icon}</div>
@@ -310,4 +321,4 @@ function CommercePageInner() {
 
 export default function CommercePage() {
   return <ErrorBoundary><CommercePageInner /></ErrorBoundary>;
-          }
+}
