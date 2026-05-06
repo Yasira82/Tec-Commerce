@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomUUID }                from 'crypto';
 
 const GATEWAY = process.env.NEXT_PUBLIC_API_GATEWAY_URL!;
 
@@ -15,13 +16,14 @@ export async function POST(req: NextRequest) {
     const res = await fetch(`${GATEWAY}/api/v1/payment/complete`, {
       method:  'POST',
       headers: {
-        'Content-Type':   'application/json',
-        'Authorization':  `Bearer ${token ?? ''}`,
-        'x-internal-key': process.env.INTERNAL_SECRET ?? '',
+        'Content-Type':    'application/json',
+        'Authorization':   `Bearer ${token ?? ''}`,
+        'x-internal-key':  process.env.INTERNAL_SECRET ?? '',
+        'Idempotency-Key': randomUUID(), // ✅
       },
       body: JSON.stringify({
-        payment_id:     paymentId,  // ✅ الاسم الصح
-        transaction_id: txid,       // ✅ الاسم الصح
+        payment_id:     paymentId,
+        transaction_id: txid,
       }),
     });
 
