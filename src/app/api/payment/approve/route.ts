@@ -19,14 +19,14 @@ export async function POST(req: NextRequest) {
 
     console.log('[approve] token exists:', !!token);
 
-    // ✅ Step 1: اعمل payment في الـ DB الأول
+    // ✅ Step 1: اعمل payment في الـ DB
     const createRes = await fetch(`${GATEWAY}/api/v1/payment/create`, {
       method:  'POST',
       headers: {
         'Content-Type':    'application/json',
         'Authorization':   `Bearer ${token ?? ''}`,
         'x-internal-key':  process.env.INTERNAL_SECRET ?? '',
-        'Idempotency-Key': paymentId, // ✅ Pi payment ID كـ idempotency key
+        'Idempotency-Key': `create-${paymentId}`, // ✅ ثابت لنفس الـ payment
       },
       body: JSON.stringify({
         userId,
@@ -40,14 +40,28 @@ export async function POST(req: NextRequest) {
     const createData = await createRes.json().catch(() => ({}));
     console.log('[approve] create response:', createRes.status, JSON.stringify(createData));
 
+    // ✅ لو 429 — الـ payment اتعمل قبل كده، دور على الـ ID من الـ response
+    if (createRes.status === 429) {
+      console.log('[approve] rate limited — payment may already exist');
+      return NextResponse.json(
+        { error: 'Rate limited — try again in a moment' },
+        { status: 429 },
+      );
+    }
+
     if (!createRes.ok) {
       return NextResponse.json(createData, { status: createRes.status });
     }
 
-    const payment_id = createData?.data?.id ?? createData?.payment?.id ?? createData?.id;
+    const payment_id = createData?.data?.payment?.id
+      ?? createData?.data?.id
+      ?? createData?.payment?.id
+      ?? createData?.id;
+
+    console.log('[approve] payment_id:', payment_id);
 
     if (!payment_id) {
-      return NextResponse.json({ error: 'Failed to create payment' }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to get payment ID' }, { status: 500 });
     }
 
     // ✅ Step 2: approve بالـ UUID
@@ -57,7 +71,7 @@ export async function POST(req: NextRequest) {
         'Content-Type':    'application/json',
         'Authorization':   `Bearer ${token ?? ''}`,
         'x-internal-key':  process.env.INTERNAL_SECRET ?? '',
-        'Idempotency-Key': randomUUID(),
+        'Idempotency-Key': `approve-${paymentId}`, // ✅ ثابت
       },
       body: JSON.stringify({
         payment_id,
