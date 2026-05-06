@@ -8,14 +8,15 @@ export interface PaymentResult {
   message?:   string;
 }
 
-// ✅ typed window extension
-const w = window as unknown as Record<string, unknown>;
-
 const getCsrfToken = (): string => {
   if (typeof document === 'undefined') return '';
   return document.cookie.split('; ')
     .find(r => r.startsWith('tec_csrf='))?.split('=')?.[1] ?? '';
 };
+
+// ✅ بنستخدمه بس في browser — مش على module level
+const getW = (): Record<string, unknown> =>
+  window as unknown as Record<string, unknown>;
 
 export const createU2APayment = (
   amount:   number,
@@ -49,10 +50,9 @@ export const createU2APayment = (
             console.error('[Payment] Approve failed:', res.status);
             return;
           }
-          // ✅ خزّن الـ payment_id (UUID) من الـ response
           const data = await res.json().catch(() => ({}));
           if (data.payment_id) {
-            w.__tec_payment_id = data.payment_id;
+            getW().__tec_payment_id = data.payment_id;
           }
         } catch (e) {
           console.error('[Payment] Approve error:', e);
@@ -61,8 +61,7 @@ export const createU2APayment = (
 
       onReadyForServerCompletion: async (paymentId: string, txid: string) => {
         try {
-          // ✅ استخدم الـ UUID المخزن لو موجود
-          const dbPaymentId = (w.__tec_payment_id as string) ?? paymentId;
+          const dbPaymentId = (getW().__tec_payment_id as string) ?? paymentId;
 
           const res = await fetch('/api/payment/complete', {
             method:      'POST',
