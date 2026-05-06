@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
         'Authorization':  `Bearer ${token ?? ''}`,
         'x-internal-key': process.env.INTERNAL_SECRET ?? '',
       },
-      body: JSON.stringify({ paymentId }),
+      body: JSON.stringify({ pi_payment_id: paymentId }),
     });
 
     const data = await res.json().catch(() => ({}));
