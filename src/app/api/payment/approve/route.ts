@@ -8,11 +8,21 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { paymentId, pi_payment_id } = body;
 
+    console.log('[approve] body:', JSON.stringify(body));
+
     if (!paymentId) {
       return NextResponse.json({ error: 'paymentId required' }, { status: 400 });
     }
 
     const token = req.cookies.get('tec_access_token')?.value;
+    console.log('[approve] token exists:', !!token);
+
+    const requestBody = {
+      payment_id:    paymentId,
+      pi_payment_id: pi_payment_id ?? paymentId,
+    };
+
+    console.log('[approve] sending:', JSON.stringify(requestBody));
 
     const res = await fetch(`${GATEWAY}/api/v1/payment/approve`, {
       method:  'POST',
@@ -20,17 +30,17 @@ export async function POST(req: NextRequest) {
         'Content-Type':    'application/json',
         'Authorization':   `Bearer ${token ?? ''}`,
         'x-internal-key':  process.env.INTERNAL_SECRET ?? '',
-        'Idempotency-Key': randomUUID(), // ✅
+        'Idempotency-Key': randomUUID(),
       },
-      body: JSON.stringify({
-        payment_id:    paymentId,
-        pi_payment_id: pi_payment_id ?? paymentId,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     const data = await res.json().catch(() => ({}));
+    console.log('[approve] response:', res.status, JSON.stringify(data));
+
     return NextResponse.json(data, { status: res.status });
-  } catch {
+  } catch (err) {
+    console.error('[approve] error:', err);
     return NextResponse.json({ error: 'Approval failed' }, { status: 500 });
   }
 }
