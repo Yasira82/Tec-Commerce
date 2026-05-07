@@ -65,21 +65,32 @@ export const GET = createHandler({
     const params = new URLSearchParams({ limit, offset });
     if (category) params.set('category', category);
 
-    const res = await fetch(
-      `${GATEWAY_URL}/api/v1/commerce/products?${params}`,
-      {
-        headers: {
-          Authorization:    `Bearer ${req.cookies.get('tec_access_token')?.value ?? ''}`,
-          'x-request-id':   ctx.requestId,
-          'x-internal-key': process.env.INTERNAL_SECRET ?? '',
-        },
-        cache: 'no-store',
-      },
-    );
+    const url = `${GATEWAY_URL}/api/v1/commerce/products?${params}`;
+    console.log('[commerce/products] fetching:', url);
 
-    if (!res.ok) return { products: [] };
+    const res = await fetch(url, {
+      headers: {
+        Authorization:    `Bearer ${req.cookies.get('tec_access_token')?.value ?? ''}`,
+        'x-request-id':   ctx.requestId,
+        'x-internal-key': process.env.INTERNAL_SECRET ?? '',
+      },
+      cache: 'no-store',
+    });
+
+    console.log('[commerce/products] status:', res.status);
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.error('[commerce/products] error:', JSON.stringify(err));
+      return { products: [] };
+    }
+
     const data = await res.json();
-    const raw  = data?.data?.products ?? [];
+    console.log('[commerce/products] raw data:', JSON.stringify(data).slice(0, 200));
+
+    const raw = data?.data?.products ?? [];
+    console.log('[commerce/products] products count:', raw.length);
+
     return { products: raw.map(normalizeProduct) };
   },
 });
