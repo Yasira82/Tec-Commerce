@@ -98,23 +98,21 @@ function CommercePageInner() {
 
   // ✅ handleBuy — روح Hub عشان يعمل payment
   const handleBuy = useCallback((product: Product) => {
-    if (!window.Pi) { showToast('Open in Pi Browser to pay', 'error'); return; }
+  if (!window.Pi) { showToast('Open in Pi Browser to pay', 'error'); return; }
 
-    const amount = product.price + (product.shipping.shippingCost ?? 0);
-    const memo   = `Buy ${product.title} — TEC Commerce`;
+  const amount = product.price + (product.shipping.shippingCost ?? 0);
 
-    const params = new URLSearchParams({
-      action:     'buy',
-      product_id: product.id,
-      amount:     String(amount),
-      memo,
-      return_url: 'https://tec-commerce-app.vercel.app/app',
-      source:     'commerce',
-    });
+  const payParams = new URLSearchParams({
+    amount:     String(amount),
+    memo:       `Buy ${product.title} — TEC Commerce`,
+    product_id: product.id,
+    return_url: 'https://tec-commerce-app.vercel.app/app',
+    source:     'commerce',
+  });
 
-    // ✅ Hub يعمل payment بـ Hub credentials
-    window.location.href = `${HUB_URL}/hub/pay?${params.toString()}`;
-  }, [showToast]);
+  // ✅ روح Hub مباشرة — Pi Browser هيعمل login تلقائي
+  window.location.href = `${HUB_URL}/hub/pay?${payParams.toString()}`;
+}, [showToast]);
 
   const handleDelete = useCallback(async (productId: string) => {
     try {
