@@ -58,7 +58,6 @@ function CommercePageInner() {
     } catch { /* silent */ }
   }, []);
 
-  // ✅ Check auth + handle payment return from Hub
   useEffect(() => {
     if (isLoading) return;
     const token = getTokenFromCookie();
@@ -67,7 +66,6 @@ function CommercePageInner() {
       return;
     }
 
-    // ✅ اقرأ نتيجة الـ payment لو رجعنا من Hub
     const params        = new URLSearchParams(window.location.search);
     const paymentStatus = params.get('payment_status');
 
@@ -91,28 +89,25 @@ function CommercePageInner() {
         }).then(() => fetchOrders()).catch(() => {});
       }
 
-      // ✅ امسح الـ params من الـ URL
       window.history.replaceState({}, '', '/app');
     }
   }, [isLoading, isAuthenticated, showToast, fetchOrders]);
 
-  // ✅ handleBuy — روح Hub عشان يعمل payment
   const handleBuy = useCallback((product: Product) => {
-  if (!window.Pi) { showToast('Open in Pi Browser to pay', 'error'); return; }
+    if (!window.Pi) { showToast('Open in Pi Browser to pay', 'error'); return; }
 
-  const amount = product.price + (product.shipping.shippingCost ?? 0);
+    const amount = product.price + (product.shipping.shippingCost ?? 0);
 
-  const payParams = new URLSearchParams({
-    amount:     String(amount),
-    memo:       `Buy ${product.title} — TEC Commerce`,
-    product_id: product.id,
-    return_url: 'https://tec-commerce-app.vercel.app/app',
-    source:     'commerce',
-  });
+    const payParams = new URLSearchParams({
+      amount:     String(amount),
+      memo:       `Buy ${product.title} — TEC Commerce`,
+      product_id: product.id,
+      return_url: 'https://tec-commerce-app.vercel.app/app',
+      source:     'commerce',
+    });
 
-  // ✅ روح Hub مباشرة — Pi Browser هيعمل login تلقائي
-  window.location.href = `${HUB_URL}/hub/pay?${payParams.toString()}`;
-}, [showToast]);
+    window.location.href = `${HUB_URL}/hub/pay?${payParams.toString()}`;
+  }, [showToast]);
 
   const handleDelete = useCallback(async (productId: string) => {
     try {
@@ -191,14 +186,10 @@ function CommercePageInner() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button className="btn"
-            // ❌ قبل:
-onClick={() => { window.location.href = `${HUB_URL}/hub`; }}
-
-// ✅ بعد:
-onClick={() => {
-  window.location.href = '/api/auth/sso?target=' +
-    encodeURIComponent('https://tec-app-frontend.vercel.app');
-}}
+            onClick={() => {
+              window.location.href = '/api/auth/sso?target=' +
+                encodeURIComponent('https://tec-app-frontend.vercel.app');
+            }}
             style={{ background: '#ffffff08', border: '1px solid #ffffff10',
               borderRadius: 12, padding: '6px 10px', color: '#d4af37',
               cursor: 'pointer', display: 'flex', flexDirection: 'column',
@@ -326,4 +317,4 @@ onClick={() => {
 
 export default function CommercePage() {
   return <ErrorBoundary><CommercePageInner /></ErrorBoundary>;
-}
+      }
