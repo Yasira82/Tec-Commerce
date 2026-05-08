@@ -21,8 +21,11 @@ const markJtiUsed = (jti: string): void => {
 };
 
 export async function GET(req: NextRequest) {
-  const token = req.nextUrl.searchParams.get('token');
-  if (!token) return NextResponse.redirect(new URL('/', req.url));
+  const token    = req.nextUrl.searchParams.get('token');
+  // ✅ اقرأ الـ redirect param
+  const redirect = req.nextUrl.searchParams.get('redirect') ?? '/app';
+
+  if (!token) return NextResponse.redirect(new URL('/app', req.url));
 
   const secret = process.env.SSO_SECRET;
   if (!secret) return NextResponse.json({ error: 'sso_not_configured' }, { status: 503 });
@@ -42,7 +45,7 @@ export async function GET(req: NextRequest) {
     } catch { /* جرب التالي */ }
   }
 
-  if (!payload) return NextResponse.redirect(new URL('/', req.url));
+  if (!payload) return NextResponse.redirect(new URL('/app', req.url));
 
   const jti = payload.jti as string;
   if (!jti)           return NextResponse.json({ error: 'missing_jti' },     { status: 401 });
@@ -52,7 +55,8 @@ export async function GET(req: NextRequest) {
   const accessToken = payload.accessToken as string;
   const user        = payload.user as Record<string, unknown>;
 
-  const res = NextResponse.redirect(new URL('/app', req.url));
+  // ✅ روح لـ redirect path مع الـ payment params
+  const res = NextResponse.redirect(new URL(redirect, req.url));
 
   const cookieOpts = {
     httpOnly: false,
