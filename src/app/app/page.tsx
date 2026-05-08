@@ -9,7 +9,8 @@ import { OrdersTab }                        from './components/OrdersTab';
 import { AddProductForm }                   from './components/AddProductForm';
 import { Product, Order, MainTab }          from './types';
 
-const HUB_URL = 'https://tec-app-frontend.vercel.app';
+// ✅ استخدم custom domain عشان الـ cookies تكون موجودة
+const HUB_URL = 'https://hub.tecosystem.app';
 const SSO_URL = `${HUB_URL}/api/auth/sso?target=` +
   encodeURIComponent('https://tec-commerce-app.vercel.app');
 
@@ -106,6 +107,7 @@ function CommercePageInner() {
       source:     'commerce',
     });
 
+    // ✅ روح hub.tecosystem.app عشان الـ cookies تكون موجودة
     window.location.href = `${HUB_URL}/hub/pay?${payParams.toString()}`;
   }, [showToast]);
 
@@ -188,7 +190,7 @@ function CommercePageInner() {
           <button className="btn"
             onClick={() => {
               window.location.href = '/api/auth/sso?target=' +
-                encodeURIComponent('https://tec-app-frontend.vercel.app');
+                encodeURIComponent('https://hub.tecosystem.app');
             }}
             style={{ background: '#ffffff08', border: '1px solid #ffffff10',
               borderRadius: 12, padding: '6px 10px', color: '#d4af37',
@@ -317,4 +319,4 @@ function CommercePageInner() {
 
 export default function CommercePage() {
   return <ErrorBoundary><CommercePageInner /></ErrorBoundary>;
-      }
+}
