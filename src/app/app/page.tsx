@@ -191,7 +191,14 @@ function CommercePageInner() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button className="btn"
-            onClick={() => { window.location.href = `${HUB_URL}/hub`; }}
+            // ❌ قبل:
+onClick={() => { window.location.href = `${HUB_URL}/hub`; }}
+
+// ✅ بعد:
+onClick={() => {
+  window.location.href = '/api/auth/sso?target=' +
+    encodeURIComponent('https://tec-app-frontend.vercel.app');
+}}
             style={{ background: '#ffffff08', border: '1px solid #ffffff10',
               borderRadius: 12, padding: '6px 10px', color: '#d4af37',
               cursor: 'pointer', display: 'flex', flexDirection: 'column',
