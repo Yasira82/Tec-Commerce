@@ -39,7 +39,6 @@ function CommercePageInner() {
     setTimeout(() => setToast(null), 3500);
   }, []);
 
-  // ✅ Refresh token — Commerce عندها tec_refresh_token
   const refreshToken = useCallback(async (): Promise<boolean> => {
     try {
       const res = await fetch('/api/auth/refresh', {
@@ -56,11 +55,8 @@ function CommercePageInner() {
         credentials: 'include', cache: 'no-store',
       });
       if (res.status === 401) {
-        const refreshed = await refreshToken();
-        if (!refreshed) { window.location.href = SSO_URL; return; }
-        const retry = await fetch('/api/bff/commerce/products', {
-          credentials: 'include', cache: 'no-store',
-        });
+        await refreshToken();
+        const retry = await fetch('/api/bff/commerce/products', { credentials: 'include', cache: 'no-store' });
         if (retry.ok) { const data = await retry.json(); setProducts(data?.products ?? []); }
         return;
       }
@@ -75,11 +71,8 @@ function CommercePageInner() {
         credentials: 'include', cache: 'no-store',
       });
       if (res.status === 401) {
-        const refreshed = await refreshToken();
-        if (!refreshed) { window.location.href = SSO_URL; return; }
-        const retry = await fetch('/api/bff/commerce/orders', {
-          credentials: 'include', cache: 'no-store',
-        });
+        await refreshToken();
+        const retry = await fetch('/api/bff/commerce/orders', { credentials: 'include', cache: 'no-store' });
         if (retry.ok) { const data = await retry.json(); setOrders(data?.orders ?? []); }
         return;
       }
@@ -108,12 +101,8 @@ function CommercePageInner() {
 
       if (productId) {
         fetch('/api/bff/commerce/orders', {
-          method:      'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-csrf-token': getCsrfToken(),
-          },
+          method: 'POST', credentials: 'include',
+          headers: { 'Content-Type': 'application/json', 'x-csrf-token': getCsrfToken() },
           body: JSON.stringify({ product_id: productId, payment_id: paymentId, txid }),
         }).then(() => fetchOrders()).catch(() => {});
       }
@@ -124,9 +113,7 @@ function CommercePageInner() {
 
   const handleBuy = useCallback((product: Product) => {
     if (!window.Pi) { showToast('Open in Pi Browser to pay', 'error'); return; }
-
     const amount = product.price + (product.shipping.shippingCost ?? 0);
-
     const payParams = new URLSearchParams({
       amount:     String(amount),
       memo:       `Buy ${product.title} — TEC Commerce`,
@@ -134,16 +121,14 @@ function CommercePageInner() {
       return_url: 'https://tec-commerce-app.vercel.app/app',
       source:     'commerce',
     });
-
     window.location.href = `${HUB_URL}/hub/pay?${payParams.toString()}`;
   }, [showToast]);
 
   const handleDelete = useCallback(async (productId: string) => {
     try {
       const res = await fetch(`/api/bff/commerce/products/${productId}`, {
-        method:      'DELETE',
-        credentials: 'include',
-        headers:     { 'x-csrf-token': getCsrfToken() },
+        method: 'DELETE', credentials: 'include',
+        headers: { 'x-csrf-token': getCsrfToken() },
       });
       if (res.ok) { showToast('Product deleted'); fetchProducts(); }
     } catch { showToast('Failed to delete', 'error'); }
@@ -152,28 +137,18 @@ function CommercePageInner() {
   const handleReview = useCallback(async (orderId: string, rating: number, comment: string) => {
     try {
       const res = await fetch(`/api/bff/commerce/orders/${orderId}/review`, {
-        method:      'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-csrf-token': getCsrfToken(),
-        },
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json', 'x-csrf-token': getCsrfToken() },
         body: JSON.stringify({ rating, comment }),
       });
       if (res.ok) { showToast('Review submitted! ⭐'); fetchOrders(); }
     } catch { showToast('Failed to submit review', 'error'); }
   }, [fetchOrders, showToast]);
 
-  // ✅ Refresh أول ثم fetch
   useEffect(() => {
-    const init = async () => {
-      const refreshed = await refreshToken();
-      if (!refreshed) { window.location.href = SSO_URL; return; }
-      fetchProducts();
-      fetchOrders();
-    };
-    init();
-  }, [fetchProducts, fetchOrders, refreshToken]);
+    fetchProducts();
+    fetchOrders();
+  }, [fetchProducts, fetchOrders]);
 
   const token = typeof window !== 'undefined' ? getTokenFromCookie() : null;
   if (isLoading || (!isAuthenticated && !token)) return <CommerceSkeleton />;
@@ -222,14 +197,10 @@ function CommercePageInner() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button className="btn"
-            onClick={() => {
-              window.location.href = '/api/auth/sso?target=' +
-                encodeURIComponent('https://hub.tecosystem.app');
-            }}
+            onClick={() => { window.location.href = '/api/auth/sso?target=' + encodeURIComponent('https://hub.tecosystem.app'); }}
             style={{ background: '#ffffff08', border: '1px solid #ffffff10',
               borderRadius: 12, padding: '6px 10px', color: '#d4af37',
-              cursor: 'pointer', display: 'flex', flexDirection: 'column',
-              alignItems: 'center', gap: 2 }}>
+              cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
             <span style={{ fontSize: 16 }}>🔷</span>
             <span style={{ fontSize: 8, color: '#4a4a5a', letterSpacing: 1 }}>HUB</span>
           </button>
@@ -349,4 +320,4 @@ function CommercePageInner() {
 
 export default function CommercePage() {
   return <ErrorBoundary><CommercePageInner /></ErrorBoundary>;
-}
+          }
