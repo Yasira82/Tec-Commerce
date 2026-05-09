@@ -9,7 +9,6 @@ import { OrdersTab }                        from './components/OrdersTab';
 import { AddProductForm }                   from './components/AddProductForm';
 import { Product, Order, MainTab }          from './types';
 
-// ✅ استخدم custom domain عشان الـ cookies تكون موجودة
 const HUB_URL = 'https://hub.tecosystem.app';
 const SSO_URL = `${HUB_URL}/api/auth/sso?target=` +
   encodeURIComponent('https://tec-commerce-app.vercel.app');
@@ -40,24 +39,53 @@ function CommercePageInner() {
     setTimeout(() => setToast(null), 3500);
   }, []);
 
+  // ✅ Refresh token — Commerce عندها tec_refresh_token
+  const refreshToken = useCallback(async (): Promise<boolean> => {
+    try {
+      const res = await fetch('/api/auth/refresh', {
+        method: 'POST', credentials: 'include',
+        headers: { 'x-csrf-token': getCsrfToken() },
+      });
+      return res.ok;
+    } catch { return false; }
+  }, []);
+
   const fetchProducts = useCallback(async () => {
     try {
       const res = await fetch('/api/bff/commerce/products', {
         credentials: 'include', cache: 'no-store',
       });
+      if (res.status === 401) {
+        const refreshed = await refreshToken();
+        if (!refreshed) { window.location.href = SSO_URL; return; }
+        const retry = await fetch('/api/bff/commerce/products', {
+          credentials: 'include', cache: 'no-store',
+        });
+        if (retry.ok) { const data = await retry.json(); setProducts(data?.products ?? []); }
+        return;
+      }
       if (res.ok) { const data = await res.json(); setProducts(data?.products ?? []); }
     } catch { /* silent */ }
     finally { setDataLoading(false); }
-  }, []);
+  }, [refreshToken]);
 
   const fetchOrders = useCallback(async () => {
     try {
       const res = await fetch('/api/bff/commerce/orders', {
         credentials: 'include', cache: 'no-store',
       });
+      if (res.status === 401) {
+        const refreshed = await refreshToken();
+        if (!refreshed) { window.location.href = SSO_URL; return; }
+        const retry = await fetch('/api/bff/commerce/orders', {
+          credentials: 'include', cache: 'no-store',
+        });
+        if (retry.ok) { const data = await retry.json(); setOrders(data?.orders ?? []); }
+        return;
+      }
       if (res.ok) { const data = await res.json(); setOrders(data?.orders ?? []); }
     } catch { /* silent */ }
-  }, []);
+  }, [refreshToken]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -107,7 +135,6 @@ function CommercePageInner() {
       source:     'commerce',
     });
 
-    // ✅ روح hub.tecosystem.app عشان الـ cookies تكون موجودة
     window.location.href = `${HUB_URL}/hub/pay?${payParams.toString()}`;
   }, [showToast]);
 
@@ -137,7 +164,16 @@ function CommercePageInner() {
     } catch { showToast('Failed to submit review', 'error'); }
   }, [fetchOrders, showToast]);
 
-  useEffect(() => { fetchProducts(); fetchOrders(); }, [fetchProducts, fetchOrders]);
+  // ✅ Refresh أول ثم fetch
+  useEffect(() => {
+    const init = async () => {
+      const refreshed = await refreshToken();
+      if (!refreshed) { window.location.href = SSO_URL; return; }
+      fetchProducts();
+      fetchOrders();
+    };
+    init();
+  }, [fetchProducts, fetchOrders, refreshToken]);
 
   const token = typeof window !== 'undefined' ? getTokenFromCookie() : null;
   if (isLoading || (!isAuthenticated && !token)) return <CommerceSkeleton />;
@@ -161,7 +197,6 @@ function CommercePageInner() {
         ::-webkit-scrollbar { display: none; }
       `}</style>
 
-      {/* Toast */}
       {toast && (
         <div style={{
           position: 'fixed', top: 70, left: 16, right: 16, zIndex: 999,
@@ -179,7 +214,6 @@ function CommercePageInner() {
         </div>
       )}
 
-      {/* Header */}
       <header style={{
         padding: '14px 20px', borderBottom: '1px solid #ffffff08',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -209,7 +243,6 @@ function CommercePageInner() {
         </div>
       </header>
 
-      {/* Stats */}
       <div style={{ padding: '16px 16px 0' }} className="fade-in">
         <div style={{
           borderRadius: 24, padding: '20px 24px',
@@ -234,7 +267,6 @@ function CommercePageInner() {
         </div>
       </div>
 
-      {/* Tabs */}
       <div style={{ padding: '14px 16px 0', display: 'flex', gap: 8 }}>
         {([
           { key: 'products', label: '🛒 Products' },
@@ -255,7 +287,6 @@ function CommercePageInner() {
         ))}
       </div>
 
-      {/* Content */}
       <div style={{ padding: '12px 16px 0' }} className="fade-in">
         {activeTab === 'products' && (
           <ProductsTab
@@ -281,7 +312,6 @@ function CommercePageInner() {
         )}
       </div>
 
-      {/* Bottom Nav */}
       <nav style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
         background: 'rgba(10,10,18,0.97)', backdropFilter: 'blur(20px)',
@@ -319,4 +349,4 @@ function CommercePageInner() {
 
 export default function CommercePage() {
   return <ErrorBoundary><CommercePageInner /></ErrorBoundary>;
-}
+                            }
