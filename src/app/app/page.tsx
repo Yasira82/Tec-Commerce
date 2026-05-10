@@ -118,12 +118,10 @@ function CommercePageInner() {
       amount:     String(amount),
       memo:       `Buy ${product.title} — TEC Commerce`,
       product_id: product.id,
-      return_url: 'https://commerce.tecosystem.app/app', // ✅ custom domain
+      return_url: 'https://commerce.tecosystem.app/app',
       source:     'commerce',
     });
-    // ✅ روح /hub الأول عشان Pi SDK يتجهز → بعدين hub/pay
-    sessionStorage.setItem('post_pi_redirect', `/hub/pay?${payParams.toString()}`);
-    window.location.href = `${HUB_URL}/hub`;
+    window.location.href = `${HUB_URL}/hub/pay?${payParams.toString()}`;
   }, [showToast]);
 
   const handleDelete = useCallback(async (productId: string) => {
@@ -322,4 +320,4 @@ function CommercePageInner() {
 
 export default function CommercePage() {
   return <ErrorBoundary><CommercePageInner /></ErrorBoundary>;
-            }
+}
