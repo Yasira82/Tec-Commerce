@@ -11,7 +11,7 @@ import { Product, Order, MainTab }          from './types';
 
 const HUB_URL = 'https://hub.tecosystem.app';
 const SSO_URL = `${HUB_URL}/api/auth/sso?target=` +
-  encodeURIComponent('https://tec-commerce-app.vercel.app');
+  encodeURIComponent('https://commerce.tecosystem.app');
 
 const getCsrfToken = (): string => {
   if (typeof document === 'undefined') return '';
@@ -118,14 +118,12 @@ function CommercePageInner() {
       amount:     String(amount),
       memo:       `Buy ${product.title} — TEC Commerce`,
       product_id: product.id,
-      return_url: 'https://tec-commerce-app.vercel.app/app',
+      return_url: 'https://commerce.tecosystem.app/app', // ✅ custom domain
       source:     'commerce',
     });
-    const link = document.createElement('a');
-link.href = `${HUB_URL}/hub/pay?${payParams.toString()}`;
-document.body.appendChild(link);
-link.click();
-document.body.removeChild(link);
+    // ✅ روح /hub الأول عشان Pi SDK يتجهز → بعدين hub/pay
+    sessionStorage.setItem('post_pi_redirect', `/hub/pay?${payParams.toString()}`);
+    window.location.href = `${HUB_URL}/hub`;
   }, [showToast]);
 
   const handleDelete = useCallback(async (productId: string) => {
@@ -324,4 +322,4 @@ document.body.removeChild(link);
 
 export default function CommercePage() {
   return <ErrorBoundary><CommercePageInner /></ErrorBoundary>;
-          }
+            }
