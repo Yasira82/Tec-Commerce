@@ -121,7 +121,11 @@ function CommercePageInner() {
       return_url: 'https://tec-commerce-app.vercel.app/app',
       source:     'commerce',
     });
-    window.location.href = `${HUB_URL}/hub/pay?${payParams.toString()}`;
+    const link = document.createElement('a');
+link.href = `${HUB_URL}/hub/pay?${payParams.toString()}`;
+document.body.appendChild(link);
+link.click();
+document.body.removeChild(link);
   }, [showToast]);
 
   const handleDelete = useCallback(async (productId: string) => {
