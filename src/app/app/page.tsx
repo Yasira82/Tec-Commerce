@@ -114,14 +114,12 @@ function CommercePageInner() {
   const handleBuy = useCallback((product: Product) => {
     if (!window.Pi) { showToast('Open in Pi Browser to pay', 'error'); return; }
     const amount = product.price + (product.shipping.shippingCost ?? 0);
-    const payParams = new URLSearchParams({
-      amount:     String(amount),
-      memo:       `Buy ${product.title} — TEC Commerce`,
-      product_id: product.id,
-      return_url: 'https://commerce.tecosystem.app/app',
-      source:     'commerce',
-    });
-    window.location.href = `${HUB_URL}/hub/pay?${payParams.toString()}`;
+    window.location.href = `${HUB_URL}/hub?pay=1`
+      + `&amount=${amount}`
+      + `&memo=${encodeURIComponent(`Buy ${product.title} — TEC Commerce`)}`
+      + `&product_id=${product.id}`
+      + `&return_url=${encodeURIComponent('https://commerce.tecosystem.app/app')}`
+      + `&source=commerce`;
   }, [showToast]);
 
   const handleDelete = useCallback(async (productId: string) => {
@@ -320,4 +318,4 @@ function CommercePageInner() {
 
 export default function CommercePage() {
   return <ErrorBoundary><CommercePageInner /></ErrorBoundary>;
-}
+      }
