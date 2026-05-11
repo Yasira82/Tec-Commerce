@@ -6,6 +6,8 @@ export default defineConfig({
     environment: 'happy-dom',
     include:     ['src/**/*.{test,spec}.{ts,tsx}'],
     exclude:     ['node_modules', 'e2e', '.next'],
+    globals:     true,
+    setupFiles:  ['src/test-setup.ts'],
   },
   resolve: {
     alias: { '@': path.resolve(__dirname, 'src') },
