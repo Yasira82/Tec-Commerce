@@ -1,28 +1,32 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, act } from '@testing-library/react';
-import CommercePage from '../page';
+import { render, screen, waitFor, act }                     from '@testing-library/react';
+import React                                                 from 'react';
 
-vi.mock('@/lib-client/hooks/usePiAuth', () => ({
-  usePiAuth: vi.fn(),
+vi.mock('@/lib-client/hooks/usePiAuth', () => ({ usePiAuth: vi.fn() }));
+vi.mock('@/components/ErrorBoundary',   () => ({
+  ErrorBoundary: ({ children }: { children: React.ReactNode }) =>
+    React.createElement(React.Fragment, null, children),
 }));
-
-vi.mock('@/components/ErrorBoundary', () => ({
-  ErrorBoundary: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+vi.mock('../components/CommerceSkeleton', () => ({
+  CommerceSkeleton: () => React.createElement('div', { 'data-testid': 'skeleton' }),
 }));
-
-vi.mock('../components/CommerceSkeleton',  () => ({ CommerceSkeleton:  () => <div data-testid="skeleton" /> }));
-vi.mock('../components/ProductsTab',       () => ({ ProductsTab: ({ onBuy, onDelete, products }: any) => (
-  <div data-testid="products-tab">
-    {products.map((p: any) => (
-      <div key={p.id}>
-        <button data-testid={`buy-${p.id}`}    onClick={() => onBuy(p)}>Buy</button>
-        <button data-testid={`delete-${p.id}`} onClick={() => onDelete(p.id)}>Delete</button>
-      </div>
-    ))}
-  </div>
-)}));
-vi.mock('../components/OrdersTab',      () => ({ OrdersTab:      () => <div data-testid="orders-tab" /> }));
-vi.mock('../components/AddProductForm', () => ({ AddProductForm: () => <div data-testid="add-form" />   }));
+vi.mock('../components/ProductsTab', () => ({
+  ProductsTab: ({ onBuy, onDelete, products }: any) =>
+    React.createElement('div', { 'data-testid': 'products-tab' },
+      ...products.map((p: any) =>
+        React.createElement('div', { key: p.id },
+          React.createElement('button', { 'data-testid': `buy-${p.id}`,    onClick: () => onBuy(p)      }, 'Buy'),
+          React.createElement('button', { 'data-testid': `delete-${p.id}`, onClick: () => onDelete(p.id) }, 'Delete'),
+        )
+      )
+    ),
+}));
+vi.mock('../components/OrdersTab',      () => ({
+  OrdersTab: () => React.createElement('div', { 'data-testid': 'orders-tab' }),
+}));
+vi.mock('../components/AddProductForm', () => ({
+  AddProductForm: () => React.createElement('div', { 'data-testid': 'add-form' }),
+}));
 
 const { usePiAuth } = await import('@/lib-client/hooks/usePiAuth');
 
@@ -45,7 +49,7 @@ function mockFetch(responses: Record<string, { ok: boolean; status?: number; dat
 }
 
 describe('Commerce Page', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
     (usePiAuth as any).mockReturnValue({
       user: mockUser, isAuthenticated: true, isLoading: false,
@@ -61,9 +65,7 @@ describe('Commerce Page', () => {
     });
   });
 
-  afterEach(() => {
-    delete (window as any).Pi;
-  });
+  afterEach(() => { delete (window as any).Pi; });
 
   // ── TIER 1: Auth ──────────────────────────────────────────────────────
 
@@ -73,18 +75,18 @@ describe('Commerce Page', () => {
     });
     Object.defineProperty(document, 'cookie', { writable: true, value: '' });
     mockFetch({});
-    render(<CommercePage />);
-    await waitFor(() => {
-      expect(window.location.href).toContain('sso');
-    });
+    const { default: CommercePage } = await import('../page');
+    render(React.createElement(CommercePage));
+    await waitFor(() => { expect(window.location.href).toContain('sso'); });
   });
 
-  it('بيعرض skeleton لو isLoading', () => {
+  it('بيعرض skeleton لو isLoading', async () => {
     (usePiAuth as any).mockReturnValue({
       user: null, isAuthenticated: false, isLoading: true,
     });
     mockFetch({});
-    render(<CommercePage />);
+    const { default: CommercePage } = await import('../page');
+    render(React.createElement(CommercePage));
     expect(screen.getByTestId('skeleton')).toBeDefined();
   });
 
@@ -104,7 +106,8 @@ describe('Commerce Page', () => {
       '/api/bff/commerce/products': { ok: true, data: { products: [mockProduct] } },
       '/api/bff/commerce/orders':   { ok: true, data: { orders: [] } },
     });
-    render(<CommercePage />);
+    const { default: CommercePage } = await import('../page');
+    render(React.createElement(CommercePage));
     await waitFor(() => {
       const calls = (global.fetch as any).mock.calls;
       const orderPost = calls.find((c: any[]) =>
@@ -128,7 +131,8 @@ describe('Commerce Page', () => {
       '/api/bff/commerce/products': { ok: true, data: { products: [] } },
       '/api/bff/commerce/orders':   { ok: true, data: { orders: [] } },
     });
-    render(<CommercePage />);
+    const { default: CommercePage } = await import('../page');
+    render(React.createElement(CommercePage));
     await waitFor(() => {
       const calls = (global.fetch as any).mock.calls;
       const orderPost = calls.find((c: any[]) =>
@@ -160,7 +164,8 @@ describe('Commerce Page', () => {
       '/api/bff/commerce/products': { ok: true, data: { products: [] } },
       '/api/bff/commerce/orders':   { ok: true, data: { orders: [] } },
     });
-    render(<CommercePage />);
+    const { default: CommercePage } = await import('../page');
+    render(React.createElement(CommercePage));
     await waitFor(() => {
       const calls = (global.fetch as any).mock.calls;
       const orderPost = calls.find((c: any[]) =>
@@ -175,7 +180,6 @@ describe('Commerce Page', () => {
     Object.defineProperty(document, 'cookie', {
       writable: true, value: 'tec_access_token=tok;tec_csrf=CSRF-DELETE',
     });
-
     let deleteCalled = false;
     global.fetch = vi.fn(async (input: RequestInfo | URL, opts?: RequestInit) => {
       const url = typeof input === 'string' ? input : input.toString();
@@ -191,11 +195,10 @@ describe('Commerce Page', () => {
       return { ok: true, status: 200, json: async () => ({}) } as Response;
     }) as unknown as typeof fetch;
 
-    render(<CommercePage />);
+    const { default: CommercePage } = await import('../page');
+    render(React.createElement(CommercePage));
     await waitFor(() => screen.getByTestId('products-tab'));
-
     await act(async () => { screen.getByTestId('delete-prod-1').click(); });
-
     await waitFor(() => { expect(deleteCalled).toBe(true); });
   });
 
@@ -206,11 +209,10 @@ describe('Commerce Page', () => {
       '/api/bff/commerce/products': { ok: true, data: { products: [mockProduct] } },
       '/api/bff/commerce/orders':   { ok: true, data: { orders: [] } },
     });
-    render(<CommercePage />);
+    const { default: CommercePage } = await import('../page');
+    render(React.createElement(CommercePage));
     await waitFor(() => screen.getByTestId('products-tab'));
-
     await act(async () => { screen.getByTestId('buy-prod-1').click(); });
-
     expect(window.location.href).toContain('hub.tecosystem.app/hub');
     expect(window.location.href).toContain('pay=1');
     expect(window.location.href).toContain('amount=10');
@@ -224,11 +226,10 @@ describe('Commerce Page', () => {
       '/api/bff/commerce/products': { ok: true, data: { products: [mockProduct] } },
       '/api/bff/commerce/orders':   { ok: true, data: { orders: [] } },
     });
-    render(<CommercePage />);
+    const { default: CommercePage } = await import('../page');
+    render(React.createElement(CommercePage));
     await waitFor(() => screen.getByTestId('products-tab'));
-
     await act(async () => { screen.getByTestId('buy-prod-1').click(); });
-
     expect(window.location.href).toBe('');
   });
 
@@ -249,9 +250,9 @@ describe('Commerce Page', () => {
       return { ok: true, status: 200, json: async () => ({}) } as Response;
     }) as unknown as typeof fetch;
 
-    render(<CommercePage />);
+    const { default: CommercePage } = await import('../page');
+    render(React.createElement(CommercePage));
     await waitFor(() => { expect(productsCalled).toBe(2); });
-
     const calls = (global.fetch as any).mock.calls;
     const refreshCall = calls.find((c: any[]) => c[0] === '/api/auth/refresh');
     expect(refreshCall).toBeDefined();
@@ -266,7 +267,8 @@ describe('Commerce Page', () => {
       return { ok: true, status: 200, json: async () => ({}) } as Response;
     }) as unknown as typeof fetch;
 
-    render(<CommercePage />);
+    const { default: CommercePage } = await import('../page');
+    render(React.createElement(CommercePage));
     await waitFor(() => { expect(window.location.href).toBe(''); });
   });
 });
