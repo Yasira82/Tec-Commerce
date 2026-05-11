@@ -1,14 +1,15 @@
 import { defineConfig } from 'vitest/config';
-import path             from 'path';
+import react             from '@vitejs/plugin-react';
+import * as path         from 'path';
 
 export default defineConfig({
+  plugins: [react({ include: /\.(tsx|jsx)$/ })],
   test: {
     environment: 'happy-dom',
     include:     ['src/**/*.{test,spec}.{ts,tsx}'],
     exclude:     ['node_modules', 'e2e', '.next'],
     globals:     true,
     setupFiles:  ['src/app/app/__tests__/setup.ts'],
-    typecheck:   { tsconfig: './tsconfig.test.json' },
   },
   resolve: {
     alias: { '@': path.resolve(__dirname, 'src') },
