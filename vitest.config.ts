@@ -7,7 +7,7 @@ export default defineConfig({
     include:     ['src/**/*.{test,spec}.{ts,tsx}'],
     exclude:     ['node_modules', 'e2e', '.next'],
     globals:     true,
-    setupFiles:  ['src/test-setup.ts'],
+    setupFiles:  ['src/app/app/__tests__/setup.ts'],
   },
   resolve: {
     alias: { '@': path.resolve(__dirname, 'src') },
