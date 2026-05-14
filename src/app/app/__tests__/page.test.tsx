@@ -36,6 +36,13 @@ const mockProduct = {
   sellerId: 'seller-456', shipping: { shippingCost: 0 },
 };
 
+// ✅ Helper: يقرأ header سواء كان Headers instance أو plain object
+function getHeader(headers: unknown, name: string): string | null {
+  if (!headers) return null;
+  if (headers instanceof Headers) return headers.get(name);
+  return (headers as Record<string, string>)[name] ?? null;
+}
+
 function mockFetch(responses: Record<string, { ok: boolean; status?: number; data?: unknown }>) {
   global.fetch = vi.fn(async (input: RequestInfo | URL, _opts?: RequestInit) => {
     const url = typeof input === 'string' ? input : input.toString();
@@ -55,12 +62,15 @@ describe('Commerce Page', () => {
       user: mockUser, isAuthenticated: true, isLoading: false,
     });
     (window as any).Pi = {};
+
+    // ✅ configurable:true عشان كل test يقدر يعيد تعريفه
     Object.defineProperty(document, 'cookie', {
-      writable: true,
-      value: 'tec_access_token=fake-token;tec_csrf=csrf-token-123',
+      writable:     true,
+      configurable: true,
+      value: 'tec_access_token=fake-token; tec_csrf=csrf-token-123',
     });
     Object.defineProperty(window, 'location', {
-      value: { href: '', search: '', assign: vi.fn() },
+      value:    { href: '', search: '', assign: vi.fn() },
       writable: true,
     });
   });
@@ -73,7 +83,9 @@ describe('Commerce Page', () => {
     (usePiAuth as any).mockReturnValue({
       user: null, isAuthenticated: false, isLoading: false,
     });
-    Object.defineProperty(document, 'cookie', { writable: true, value: '' });
+    Object.defineProperty(document, 'cookie', {
+      writable: true, configurable: true, value: '',
+    });
     mockFetch({});
     const { default: CommercePage } = await import('../page');
     render(React.createElement(CommercePage));
@@ -149,8 +161,10 @@ describe('Commerce Page', () => {
   // ── TIER 1: CSRF ──────────────────────────────────────────────────────
 
   it('POST order يحمل x-csrf-token', async () => {
+    // ✅ configurable:true — يتغير بعد beforeEach
     Object.defineProperty(document, 'cookie', {
-      writable: true, value: 'tec_access_token=tok;tec_csrf=MY-CSRF-TOKEN',
+      writable: true, configurable: true,
+      value: 'tec_access_token=tok; tec_csrf=MY-CSRF-TOKEN',
     });
     Object.defineProperty(window, 'location', {
       value: {
@@ -172,20 +186,23 @@ describe('Commerce Page', () => {
         c[0] === '/api/bff/commerce/orders' && c[1]?.method === 'POST'
       );
       expect(orderPost).toBeDefined();
-      expect(orderPost[1].headers['x-csrf-token']).toBe('MY-CSRF-TOKEN');
+      // ✅ getHeader يشتغل مع Headers instance + plain object
+      expect(getHeader(orderPost[1].headers, 'x-csrf-token')).toBe('MY-CSRF-TOKEN');
     });
   });
 
   it('DELETE product يحمل x-csrf-token', async () => {
     Object.defineProperty(document, 'cookie', {
-      writable: true, value: 'tec_access_token=tok;tec_csrf=CSRF-DELETE',
+      writable: true, configurable: true,
+      value: 'tec_access_token=tok; tec_csrf=CSRF-DELETE',
     });
     let deleteCalled = false;
     global.fetch = vi.fn(async (input: RequestInfo | URL, opts?: RequestInit) => {
       const url = typeof input === 'string' ? input : input.toString();
       if (url.includes('/products/prod-1') && opts?.method === 'DELETE') {
         deleteCalled = true;
-        expect((opts.headers as Record<string, string>)['x-csrf-token']).toBe('CSRF-DELETE');
+        // ✅ getHeader يشتغل مع Headers instance + plain object
+        expect(getHeader(opts.headers, 'x-csrf-token')).toBe('CSRF-DELETE');
         return { ok: true, status: 200, json: async () => ({}) } as Response;
       }
       if (url === '/api/bff/commerce/products')
@@ -237,7 +254,7 @@ describe('Commerce Page', () => {
 
   it('fetchProducts يعمل retry بعد 401', async () => {
     let productsCalled = 0;
-    global.fetch = vi.fn(async (input: RequestInfo | URL, opts?: RequestInit) => {
+    global.fetch = vi.fn(async (input: RequestInfo | URL, _opts?: RequestInit) => {
       const url = typeof input === 'string' ? input : input.toString();
       if (url === '/api/bff/commerce/products') {
         productsCalled++;
