@@ -9,9 +9,10 @@ import { OrdersTab }                        from './components/OrdersTab';
 import { AddProductForm }                   from './components/AddProductForm';
 import { Product, Order, MainTab }          from './types';
 
-const HUB_URL = 'https://hub.tecosystem.app';
-const SSO_URL = `${HUB_URL}/api/auth/sso?target=` +
-  encodeURIComponent('https://commerce.tecosystem.app');
+// ✅ ISS-003: env vars بدل hardcoded URLs
+const HUB_URL      = process.env.NEXT_PUBLIC_HUB_URL      ?? 'https://hub.tecosystem.app';
+const COMMERCE_URL = process.env.NEXT_PUBLIC_COMMERCE_URL ?? 'https://commerce.tecosystem.app';
+const SSO_URL      = `${HUB_URL}/api/auth/sso?target=${encodeURIComponent(COMMERCE_URL)}`;
 
 const getCsrfToken = (): string => {
   if (typeof document === 'undefined') return '';
@@ -114,11 +115,12 @@ function CommercePageInner() {
   const handleBuy = useCallback((product: Product) => {
     if (!window.Pi) { showToast('Open in Pi Browser to pay', 'error'); return; }
     const amount = product.price + (product.shipping.shippingCost ?? 0);
+    // ✅ ISS-003: COMMERCE_URL بدل hardcoded
     window.location.href = `${HUB_URL}/hub?pay=1`
       + `&amount=${amount}`
       + `&memo=${encodeURIComponent(`Buy ${product.title} — TEC Commerce`)}`
       + `&product_id=${product.id}`
-      + `&return_url=${encodeURIComponent('https://commerce.tecosystem.app/app')}`
+      + `&return_url=${encodeURIComponent(`${COMMERCE_URL}/app`)}`
       + `&source=commerce`;
   }, [showToast]);
 
@@ -195,7 +197,8 @@ function CommercePageInner() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button className="btn"
-            onClick={() => { window.location.href = '/api/auth/sso?target=' + encodeURIComponent('https://hub.tecosystem.app'); }}
+            // ✅ ISS-003: fix HUB button — كان بيروح على Commerce domain (404)
+            onClick={() => { window.location.href = `${HUB_URL}/hub`; }}
             style={{ background: '#ffffff08', border: '1px solid #ffffff10',
               borderRadius: 12, padding: '6px 10px', color: '#d4af37',
               cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
@@ -318,4 +321,4 @@ function CommercePageInner() {
 
 export default function CommercePage() {
   return <ErrorBoundary><CommercePageInner /></ErrorBoundary>;
-      }
+               }
