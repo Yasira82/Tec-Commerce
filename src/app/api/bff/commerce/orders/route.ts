@@ -1,7 +1,6 @@
 import { createHandler, GATEWAY_URL } from '@/lib/bff/createHandler';
 import { z }                          from 'zod';
 
-// ✅ إضافة payment_id + txid — بيتبعتوا من page.tsx بعد Hub PaymentModal
 const CreateOrderSchema = z.object({
   product_id: z.string().uuid(),
   payment_id: z.string().optional(),
@@ -33,25 +32,29 @@ export const POST = createHandler({
   requireAuth: true,
   schema:      CreateOrderSchema,
   handler: async ({ input, ctx, req }) => {
+    const headers = {
+      'Content-Type':   'application/json',
+      Authorization:    `Bearer ${req.cookies.get('tec_access_token')?.value ?? ''}`,
+      'x-request-id':   ctx.requestId,
+      'x-internal-key': process.env.INTERNAL_SECRET ?? '',
+    };
+
+    // ✅ بعت product_id + buyer_id + payment_id في request واحد
+    // Backend بيعمل order PAID مباشرة لو payment_id موجود
     const res = await fetch(`${GATEWAY_URL}/api/v1/commerce/orders`, {
-      method:  'POST',
-      headers: {
-        'Content-Type':   'application/json',
-        Authorization:    `Bearer ${req.cookies.get('tec_access_token')?.value ?? ''}`,
-        'x-request-id':   ctx.requestId,
-        'x-internal-key': process.env.INTERNAL_SECRET ?? '',
-      },
+      method: 'POST',
+      headers,
       body: JSON.stringify({
-        product_id: input.product_id,
-        buyer_id:   ctx.userId,
-        payment_id: input.payment_id,
-        txid:       input.txid,
+        buyer_id:      ctx.userId,
+        product_id:    input.product_id,
+        payment_id:    input.payment_id    ?? undefined,
+        pi_payment_id: input.txid         ?? undefined,
       }),
     });
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.message ?? 'Failed to create order');
+      throw new Error((err as { message?: string }).message ?? 'Failed to create order');
     }
 
     const data = await res.json();
