@@ -1,8 +1,11 @@
 import { createHandler, GATEWAY_URL } from '@/lib/bff/createHandler';
 import { z }                          from 'zod';
 
+// ✅ إضافة payment_id + txid — بيتبعتوا من page.tsx بعد Hub PaymentModal
 const CreateOrderSchema = z.object({
   product_id: z.string().uuid(),
+  payment_id: z.string().optional(),
+  txid:       z.string().optional(),
 });
 
 export const GET = createHandler({
@@ -41,6 +44,8 @@ export const POST = createHandler({
       body: JSON.stringify({
         product_id: input.product_id,
         buyer_id:   ctx.userId,
+        payment_id: input.payment_id,
+        txid:       input.txid,
       }),
     });
 
