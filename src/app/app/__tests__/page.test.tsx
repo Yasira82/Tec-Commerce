@@ -36,7 +36,6 @@ const mockProduct = {
   sellerId: 'seller-456', shipping: { shippingCost: 0 },
 };
 
-// ✅ Helper: يقرأ header سواء كان Headers instance أو plain object
 function getHeader(headers: unknown, name: string): string | null {
   if (!headers) return null;
   if (headers instanceof Headers) return headers.get(name);
@@ -63,7 +62,6 @@ describe('Commerce Page', () => {
     });
     (window as any).Pi = {};
 
-    // ✅ configurable:true عشان كل test يقدر يعيد تعريفه
     Object.defineProperty(document, 'cookie', {
       writable:     true,
       configurable: true,
@@ -161,7 +159,6 @@ describe('Commerce Page', () => {
   // ── TIER 1: CSRF ──────────────────────────────────────────────────────
 
   it('POST order يحمل x-csrf-token', async () => {
-    // ✅ configurable:true — يتغير بعد beforeEach
     Object.defineProperty(document, 'cookie', {
       writable: true, configurable: true,
       value: 'tec_access_token=tok; tec_csrf=MY-CSRF-TOKEN',
@@ -186,7 +183,6 @@ describe('Commerce Page', () => {
         c[0] === '/api/bff/commerce/orders' && c[1]?.method === 'POST'
       );
       expect(orderPost).toBeDefined();
-      // ✅ getHeader يشتغل مع Headers instance + plain object
       expect(getHeader(orderPost[1].headers, 'x-csrf-token')).toBe('MY-CSRF-TOKEN');
     });
   });
@@ -201,7 +197,6 @@ describe('Commerce Page', () => {
       const url = typeof input === 'string' ? input : input.toString();
       if (url.includes('/products/prod-1') && opts?.method === 'DELETE') {
         deleteCalled = true;
-        // ✅ getHeader يشتغل مع Headers instance + plain object
         expect(getHeader(opts.headers, 'x-csrf-token')).toBe('CSRF-DELETE');
         return { ok: true, status: 200, json: async () => ({}) } as Response;
       }
@@ -214,7 +209,8 @@ describe('Commerce Page', () => {
 
     const { default: CommercePage } = await import('../page');
     render(React.createElement(CommercePage));
-    await waitFor(() => screen.getByTestId('products-tab'));
+    // ✅ ننتظر الـ button نفسه — مش products-tab اللي بيظهر فوراً وهو فاضي
+    await waitFor(() => screen.getByTestId('delete-prod-1'));
     await act(async () => { screen.getByTestId('delete-prod-1').click(); });
     await waitFor(() => { expect(deleteCalled).toBe(true); });
   });
@@ -228,7 +224,8 @@ describe('Commerce Page', () => {
     });
     const { default: CommercePage } = await import('../page');
     render(React.createElement(CommercePage));
-    await waitFor(() => screen.getByTestId('products-tab'));
+    // ✅ ننتظر buy-prod-1 مباشرة — products-tab بيظهر فوراً حتى لو products = []
+    await waitFor(() => screen.getByTestId('buy-prod-1'));
     await act(async () => { screen.getByTestId('buy-prod-1').click(); });
     expect(window.location.href).toContain('hub.tecosystem.app/hub');
     expect(window.location.href).toContain('pay=1');
@@ -245,7 +242,8 @@ describe('Commerce Page', () => {
     });
     const { default: CommercePage } = await import('../page');
     render(React.createElement(CommercePage));
-    await waitFor(() => screen.getByTestId('products-tab'));
+    // ✅ نفس الـ fix
+    await waitFor(() => screen.getByTestId('buy-prod-1'));
     await act(async () => { screen.getByTestId('buy-prod-1').click(); });
     expect(window.location.href).toBe('');
   });
