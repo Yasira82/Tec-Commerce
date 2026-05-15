@@ -1,5 +1,4 @@
 import { createHandler, GATEWAY_URL } from '@/lib/bff/createHandler';
-import { NextRequest }                from 'next/server';
 import { z }                          from 'zod';
 
 const CreateProductSchema = z.object({
@@ -10,14 +9,14 @@ const CreateProductSchema = z.object({
   category:     z.string().optional(),
   condition:    z.string().optional(),
   images:       z.array(z.string()).optional(),
-  shipping:     z.object({
+  shipping: z.object({
     country:       z.string(),
     city:          z.string(),
     shipsTo:       z.array(z.string()),
     shippingCost:  z.number(),
     estimatedDays: z.string(),
   }).optional(),
-  contact:      z.object({
+  contact: z.object({
     whatsapp: z.string().optional(),
     telegram: z.string().optional(),
     email:    z.string().optional(),
@@ -29,30 +28,52 @@ const CreateProductSchema = z.object({
 const DEFAULT_SHIPPING = {
   country:       'Unknown',
   city:          'Unknown',
-  shipsTo:       [],
+  shipsTo:       [] as string[],
   shippingCost:  0,
   estimatedDays: 'Contact seller',
 };
 
 const DEFAULT_CONTACT = {
-  whatsapp: undefined,
-  telegram: undefined,
-  email:    undefined,
+  whatsapp: undefined as string | undefined,
+  telegram: undefined as string | undefined,
+  email:    undefined as string | undefined,
 };
 
-const normalizeProduct = (p: Record<string, unknown>) => ({
-  ...p,
-  images:       Array.isArray(p.images) ? p.images : [],
-  rating:       Number(p.rating)      || 0,
-  reviewCount:  Number(p.reviewCount) || 0,
-  condition:    p.condition           || 'new',
-  shipping:     (p.shipping && typeof p.shipping === 'object')
-    ? p.shipping
-    : DEFAULT_SHIPPING,
-  contact:      (p.contact && typeof p.contact === 'object')
-    ? p.contact
-    : DEFAULT_CONTACT,
-});
+// ✅ normalizeProduct — يعمل map صح بين backend و frontend types
+const normalizeProduct = (p: Record<string, unknown>) => {
+  const meta = (p.metadata && typeof p.metadata === 'object')
+    ? p.metadata as Record<string, unknown>
+    : {};
+
+  return {
+    id:           p.id,
+    title:        p.title,
+    description:  p.description ?? '',
+    price:        Number(p.price) || 0,
+    stock:        Number(p.stock) || 0,
+    category:     p.category ?? 'Other',
+    condition:    (meta.condition as string) ?? 'new',
+    // ✅ images[] من metadata أو image_url كـ fallback
+    images: Array.isArray(meta.images) && (meta.images as string[]).length > 0
+      ? (meta.images as string[])
+      : p.image_url
+        ? [p.image_url as string]
+        : [],
+    sellerId:     p.seller_id,
+    sellerName:   (meta.sellerName as string | undefined) ?? undefined,
+    shipping: (meta.shipping && typeof meta.shipping === 'object')
+      ? meta.shipping
+      : DEFAULT_SHIPPING,
+    contact: (meta.contact && typeof meta.contact === 'object')
+      ? meta.contact
+      : DEFAULT_CONTACT,
+    rating:       Number(meta.rating)      || 0,
+    reviewCount:  Number(meta.reviewCount) || 0,
+    warranty:     (meta.warranty     as string | undefined) ?? undefined,
+    returnPolicy: (meta.returnPolicy as string | undefined) ?? undefined,
+    createdAt:    p.created_at,
+  };
+};
 
 export const GET = createHandler({
   requireAuth: true,
@@ -65,32 +86,22 @@ export const GET = createHandler({
     const params = new URLSearchParams({ limit, offset });
     if (category) params.set('category', category);
 
-    const url = `${GATEWAY_URL}/api/v1/commerce/products?${params}`;
-    console.log('[commerce/products] fetching:', url);
-
-    const res = await fetch(url, {
-      headers: {
-        Authorization:    `Bearer ${req.cookies.get('tec_access_token')?.value ?? ''}`,
-        'x-request-id':   ctx.requestId,
-        'x-internal-key': process.env.INTERNAL_SECRET ?? '',
+    const res = await fetch(
+      `${GATEWAY_URL}/api/v1/commerce/products?${params}`,
+      {
+        headers: {
+          Authorization:    `Bearer ${req.cookies.get('tec_access_token')?.value ?? ''}`,
+          'x-request-id':   ctx.requestId,
+          'x-internal-key': process.env.INTERNAL_SECRET ?? '',
+        },
+        cache: 'no-store',
       },
-      cache: 'no-store',
-    });
+    );
 
-    console.log('[commerce/products] status:', res.status);
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      console.error('[commerce/products] error:', JSON.stringify(err));
-      return { products: [] };
-    }
+    if (!res.ok) return { products: [] };
 
     const data = await res.json();
-    console.log('[commerce/products] raw data:', JSON.stringify(data).slice(0, 200));
-
-    const raw = data?.data?.products ?? [];
-    console.log('[commerce/products] products count:', raw.length);
-
+    const raw  = data?.data?.products ?? [];
     return { products: raw.map(normalizeProduct) };
   },
 });
@@ -100,19 +111,20 @@ export const POST = createHandler({
   schema:      CreateProductSchema,
   handler: async ({ input, ctx, req }) => {
     const res = await fetch(`${GATEWAY_URL}/api/v1/commerce/products`, {
-      method:  'POST',
+      method: 'POST',
       headers: {
         'Content-Type':   'application/json',
         Authorization:    `Bearer ${req.cookies.get('tec_access_token')?.value ?? ''}`,
         'x-request-id':   ctx.requestId,
         'x-internal-key': process.env.INTERNAL_SECRET ?? '',
       },
+      // ✅ بعت كل الـ fields للـ backend
       body: JSON.stringify(input),
     });
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.message ?? 'Failed to create product');
+      throw new Error((err as { message?: string }).message ?? 'Failed to create product');
     }
 
     const data = await res.json();
