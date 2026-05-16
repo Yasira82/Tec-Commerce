@@ -9,10 +9,10 @@ interface Props {
 }
 
 export function OrderCard({ order, onReview }: Props) {
-  const [showReview,  setShowReview]  = useState(false);
-  const [rating,      setRating]      = useState(5);
-  const [comment,     setComment]     = useState('');
-  const [submitting,  setSubmitting]  = useState(false);
+  const [showReview, setShowReview] = useState(false);
+  const [rating,     setRating]     = useState(5);
+  const [comment,    setComment]    = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const statusColor = STATUS_COLORS[order.status] ?? '#4a4a5a';
   const canReview   = order.status === 'delivered' && !order.review;
@@ -46,11 +46,13 @@ export function OrderCard({ order, onReview }: Props) {
         <div style={{ display: 'flex', gap: 12, marginBottom: 12,
           background: '#ffffff05', borderRadius: 12, padding: '10px' }}>
           <div style={{ width: 48, height: 48, borderRadius: 10, background: '#ffffff08',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
-            {order.product.images?.[0]
-              ? <img src={order.product.images[0]} alt={order.product.title}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 10 }} />
-              : '📦'}
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 20, flexShrink: 0, overflow: 'hidden' }}>
+            {order.product.images?.[0] ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={order.product.images[0]} alt={order.product.title}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 10 }} />
+            ) : '📦'}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: '#fff',
@@ -106,33 +108,30 @@ export function OrderCard({ order, onReview }: Props) {
             {[1,2,3,4,5].map(i => (
               <button key={i} onClick={() => setRating(i)}
                 style={{ fontSize: 24, background: 'none', border: 'none', cursor: 'pointer',
-                  color: i <= rating ? '#f0c040' : '#ffffff20', transition: 'color 0.2s' }}>
+                  color: i <= rating ? '#f0c040' : '#ffffff20' }}>
                 ★
               </button>
             ))}
           </div>
-          <textarea
-            value={comment}
-            onChange={e => setComment(e.target.value)}
+          <textarea value={comment} onChange={e => setComment(e.target.value)}
             placeholder="Share your experience..."
-            rows={3}
-            style={{ width: '100%', background: '#ffffff08', border: '1px solid #ffffff10',
+            style={{ width: '100%', background: '#0a0a12', border: '1px solid #ffffff10',
               borderRadius: 10, padding: '10px', color: '#fff', fontSize: 12,
-              outline: 'none', resize: 'none', boxSizing: 'border-box', marginBottom: 10 }}
-          />
+              resize: 'none', outline: 'none', marginBottom: 10, boxSizing: 'border-box' }}
+            rows={3} />
           <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => setShowReview(false)}
-              style={{ flex: 1, padding: '10px', borderRadius: 10,
-                background: '#ffffff08', border: 'none', color: '#4a4a5a',
-                fontSize: 12, cursor: 'pointer' }}>
-              Cancel
-            </button>
             <button onClick={handleReview} disabled={submitting || !comment.trim()}
-              style={{ flex: 2, padding: '10px', borderRadius: 10,
+              style={{ flex: 1, padding: '10px', borderRadius: 10,
                 background: 'linear-gradient(135deg,#d4af37,#b8882a)',
-                border: 'none', color: '#0a0800', fontSize: 12, fontWeight: 700,
-                cursor: submitting ? 'not-allowed' : 'pointer' }}>
-              {submitting ? 'Submitting...' : 'Submit Review'}
+                border: 'none', color: '#0a0800', fontWeight: 700,
+                fontSize: 12, cursor: 'pointer' }}>
+              {submitting ? 'Submitting...' : 'Submit'}
+            </button>
+            <button onClick={() => setShowReview(false)}
+              style={{ padding: '10px 16px', borderRadius: 10,
+                background: '#ffffff08', border: '1px solid #ffffff10',
+                color: '#6b6b7a', fontSize: 12, cursor: 'pointer' }}>
+              Cancel
             </button>
           </div>
         </div>
