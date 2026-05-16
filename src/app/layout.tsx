@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Script            from 'next/script';
 import { LocaleProvider }       from '@/lib/i18n';
 import { BackendOfflineBanner } from '@/components/BackendOfflineBanner';
 
@@ -17,10 +18,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           html, body { height: 100%; width: 100%; background: #020205; }
           body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
         `}</style>
-
-        <script src="https://sdk.minepi.com/pi-sdk.js" />
-
-        <script
+      </head>
+      <body>
+        {/* ✅ Pi SDK — beforeInteractive بدل sync script */}
+        <Script
+          src="https://sdk.minepi.com/pi-sdk.js"
+          strategy="beforeInteractive"
+        />
+        <Script
+          id="pi-init"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
@@ -53,8 +60,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             `,
           }}
         />
-      </head>
-      <body>
         <LocaleProvider>
           <BackendOfflineBanner />
           {children}
