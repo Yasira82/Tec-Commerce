@@ -107,8 +107,8 @@ export function OrderCard({ order, onReview }: Props) {
           <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
             {[1,2,3,4,5].map(i => (
               <button key={i} onClick={() => setRating(i)}
-                style={{ fontSize: 24, background: 'none', border: 'none', cursor: 'pointer',
-                  color: i <= rating ? '#f0c040' : '#ffffff20' }}>
+                style={{ fontSize: 24, background: 'none', border: 'none',
+                  cursor: 'pointer', color: i <= rating ? '#f0c040' : '#ffffff20' }}>
                 ★
               </button>
             ))}
