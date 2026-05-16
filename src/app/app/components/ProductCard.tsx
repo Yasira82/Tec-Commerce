@@ -34,6 +34,7 @@ export function ProductCard({ product, onBuy, isMine, onDelete, onEdit }: Props)
       {/* Image */}
       {images.length > 0 && (
         <div style={{ position: 'relative', height: 180, background: '#ffffff05' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={images[imgIdx]} alt={product.title}
             style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           {images.length > 1 && (
