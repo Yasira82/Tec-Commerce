@@ -10,6 +10,7 @@ on:
       - 'tsconfig.json'
       - 'next.config.js'
       - 'vitest.config.ts'
+      - 'eslint.config.mjs'
       - '.github/workflows/ci.yml'
   pull_request:
     branches: [main]
@@ -20,6 +21,7 @@ on:
       - 'tsconfig.json'
       - 'next.config.js'
       - 'vitest.config.ts'
+      - 'eslint.config.mjs'
       - '.github/workflows/ci.yml'
   workflow_dispatch:
 
@@ -43,8 +45,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: node_modules
-          key: ${{ runner.os }}-assets-${{ hashFiles('package-lock.json') }}
-          restore-keys: ${{ runner.os }}-assets-
+          key: ${{ runner.os }}-commerce-${{ hashFiles('package-lock.json') }}
+          restore-keys: ${{ runner.os }}-commerce-
 
       - name: Install
         run: npm install --legacy-peer-deps
@@ -65,13 +67,15 @@ jobs:
         run: npm run build
         env:
           NEXT_PUBLIC_PI_SANDBOX:      'true'
+          NEXT_PUBLIC_HUB_URL:         'https://hub.tecosystem.app'
+          NEXT_PUBLIC_COMMERCE_URL:    'https://commerce.tecosystem.app'
           NEXT_PUBLIC_API_GATEWAY_URL: ${{ secrets.NEXT_PUBLIC_API_GATEWAY_URL || 'https://api-gateway-production-6a68.up.railway.app' }}
-          NEXT_PUBLIC_PI_APP_ID:       ${{ secrets.NEXT_PUBLIC_PI_APP_ID || 'assets-1eaf493994b4d31c' }}
+          NEXT_PUBLIC_PI_APP_ID:       ${{ secrets.NEXT_PUBLIC_PI_APP_ID || 'commerce-app-id' }}
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         if: github.event_name == 'push'
         with:
-          name: assets-build
+          name: commerce-build
           path: .next/
           retention-days: 3
