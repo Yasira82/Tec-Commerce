@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Order }    from '../types';
+import { useState }                    from 'react';
+import { Order, OrderTimelineEvent }   from '../types';
 
 interface Props {
   order:     Order;
@@ -9,21 +9,22 @@ interface Props {
 }
 
 // ── Status config ──────────────────────────────────────────────
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: string; step: number }> = {
-  pending:    { label: 'Pending',    color: '#f59e0b', icon: '⏳', step: 0 },
-  paid:       { label: 'Paid',       color: '#3b82f6', icon: '💳', step: 1 },
-  processing: { label: 'Processing', color: '#8b5cf6', icon: '⚙️', step: 2 },
-  shipped:    { label: 'Shipped',    color: '#06b6d4', icon: '🚚', step: 3 },
-  delivered:  { label: 'Delivered',  color: '#10b981', icon: '✅', step: 4 },
-  cancelled:  { label: 'Cancelled',  color: '#ef4444', icon: '❌', step: -1 },
+const STATUS_CONFIG: Record<string, {
+  label: string; color: string; icon: string; step: number;
+}> = {
+  pending:   { label: 'Pending',   color: '#f59e0b', icon: '⏳', step: 0 },
+  confirmed: { label: 'Confirmed', color: '#3b82f6', icon: '✓',  step: 1 },
+  shipped:   { label: 'Shipped',   color: '#06b6d4', icon: '🚚', step: 2 },
+  delivered: { label: 'Delivered', color: '#10b981', icon: '✅', step: 3 },
+  cancelled: { label: 'Cancelled', color: '#ef4444', icon: '❌', step: -1 },
+  refunded:  { label: 'Refunded',  color: '#f97316', icon: '↩️', step: -1 },
 };
 
 const TIMELINE_STEPS = [
-  { key: 'pending',    label: 'Order Placed',  icon: '🛒' },
-  { key: 'paid',       label: 'Payment',       icon: '💳' },
-  { key: 'processing', label: 'Processing',    icon: '⚙️' },
-  { key: 'shipped',    label: 'Shipped',       icon: '🚚' },
-  { key: 'delivered',  label: 'Delivered',     icon: '✅' },
+  { key: 'pending',   label: 'Order Placed', icon: '🛒' },
+  { key: 'confirmed', label: 'Confirmed',    icon: '✓'  },
+  { key: 'shipped',   label: 'Shipped',      icon: '🚚' },
+  { key: 'delivered', label: 'Delivered',    icon: '✅' },
 ];
 
 function formatDate(iso: string) {
@@ -40,53 +41,54 @@ function formatDate(iso: string) {
 // ── Timeline ───────────────────────────────────────────────────
 function OrderTimeline({ status }: { status: string }) {
   const lower       = status.toLowerCase();
-  const isCancelled = lower === 'cancelled';
+  const isCancelled = lower === 'cancelled' || lower === 'refunded';
   const currentStep = STATUS_CONFIG[lower]?.step ?? 0;
+  const cfg         = STATUS_CONFIG[lower] ?? STATUS_CONFIG.pending;
 
   if (isCancelled) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: 12, marginBottom: 12 }}>
-        <span style={{ fontSize: 18 }}>❌</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: `${cfg.color}10`, border: `1px solid ${cfg.color}25`, borderRadius: 12, marginBottom: 14 }}>
+        <span style={{ fontSize: 20 }}>{cfg.icon}</span>
         <div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#ef4444' }}>Order Cancelled</div>
-          <div style={{ fontSize: 10, color: '#6b6b7a' }}>This order has been cancelled</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: cfg.color }}>{cfg.label}</div>
+          <div style={{ fontSize: 10, color: '#6b6b7a' }}>
+            {lower === 'refunded' ? 'This order has been refunded' : 'This order has been cancelled'}
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ marginBottom: 14 }}>
-      <div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', position: 'relative' }}>
         {TIMELINE_STEPS.map((step, i) => {
           const done    = i <= currentStep;
           const current = i === currentStep;
-          const color   = done ? STATUS_CONFIG[step.key]?.color ?? '#10b981' : '#2a2a3a';
+          const color   = done ? (STATUS_CONFIG[step.key]?.color ?? '#10b981') : '#2a2a3a';
 
           return (
-            <div key={step.key} style={{ display: 'flex', alignItems: 'center', flex: i < TIMELINE_STEPS.length - 1 ? 1 : 'none' }}>
-              {/* Circle */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, position: 'relative', zIndex: 1 }}>
+            <div key={step.key} style={{ display: 'flex', alignItems: 'flex-start', flex: i < TIMELINE_STEPS.length - 1 ? 1 : 'none' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
                 <div style={{
                   width: current ? 32 : 24, height: current ? 32 : 24,
                   borderRadius: '50%', flexShrink: 0,
                   background: done ? `${color}20` : '#0f0f1a',
                   border: `2px solid ${done ? color : '#2a2a3a'}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: current ? 14 : 10,
-                  transition: 'all 0.3s ease',
+                  fontSize: current ? 13 : 10,
                   boxShadow: current ? `0 0 12px ${color}40` : 'none',
+                  transition: 'all 0.3s ease',
                 }}>
-                  {done ? step.icon : <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#2a2a3a', display: 'block' }} />}
+                  {done ? step.icon : <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#2a2a3a', display: 'block' }} />}
                 </div>
-                <span style={{ fontSize: 8, color: done ? color : '#4a4a5a', fontWeight: done ? 700 : 400, whiteSpace: 'nowrap', letterSpacing: 0.3 }}>
+                <span style={{ fontSize: 8, color: done ? color : '#4a4a5a', fontWeight: done ? 700 : 400, whiteSpace: 'nowrap', letterSpacing: 0.3, textAlign: 'center' }}>
                   {step.label}
                 </span>
               </div>
 
-              {/* Line */}
               {i < TIMELINE_STEPS.length - 1 && (
-                <div style={{ flex: 1, height: 2, marginBottom: 16, marginLeft: 2, marginRight: 2, background: i < currentStep ? '#10b98160' : '#1a1a2a', borderRadius: 1 }} />
+                <div style={{ flex: 1, height: 2, marginTop: 11, marginLeft: 3, marginRight: 3, background: i < currentStep ? `${color}60` : '#1a1a2a', borderRadius: 1, transition: 'background 0.3s ease' }} />
               )}
             </div>
           );
@@ -118,13 +120,13 @@ function ReviewForm({ onSubmit, onCancel }: {
       <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
         {[1,2,3,4,5].map(i => (
           <button key={i} onClick={() => setRating(i)}
-            style={{ fontSize: 26, background: 'none', border: 'none', cursor: 'pointer', color: i <= rating ? '#f0c040' : '#ffffff20', transition: 'transform 0.1s', padding: 0 }}>
+            style={{ fontSize: 26, background: 'none', border: 'none', cursor: 'pointer', color: i <= rating ? '#f0c040' : '#ffffff20', padding: 0, transition: 'transform 0.1s' }}>
             ★
           </button>
         ))}
       </div>
       <textarea value={comment} onChange={e => setComment(e.target.value)}
-        placeholder="Share your experience with this product..."
+        placeholder="Share your experience..."
         style={{ width: '100%', background: '#0a0a12', border: '1px solid #ffffff10', borderRadius: 10, padding: '10px 12px', color: '#fff', fontSize: 12, resize: 'none', outline: 'none', marginBottom: 10, boxSizing: 'border-box', fontFamily: 'inherit' }}
         rows={3} />
       <div style={{ display: 'flex', gap: 8 }}>
@@ -146,9 +148,9 @@ export function OrderCard({ order, onReview }: Props) {
   const [expanded,   setExpanded]   = useState(false);
   const [showReview, setShowReview] = useState(false);
 
-  const lower       = order.status.toLowerCase();
-  const cfg         = STATUS_CONFIG[lower] ?? STATUS_CONFIG.pending;
-  const canReview   = lower === 'delivered' && !order.review;
+  const lower     = order.status.toLowerCase();
+  const cfg       = STATUS_CONFIG[lower] ?? STATUS_CONFIG.pending;
+  const canReview = lower === 'delivered' && !order.review;
 
   const handleReview = async (rating: number, comment: string) => {
     if (!onReview) return;
@@ -164,34 +166,36 @@ export function OrderCard({ order, onReview }: Props) {
       transition: 'border-color 0.2s ease',
     }}>
 
-      {/* ── Header (always visible) ─────────────── */}
+      {/* ── Header ─────────────────────────────── */}
       <button onClick={() => setExpanded(p => !p)}
         style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: '14px 16px', textAlign: 'left' }}>
+
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 16 }}>{cfg.icon}</span>
-            <div style={{ fontSize: 11, color: '#6b6b7a', fontFamily: 'monospace' }}>
+            <span style={{ fontSize: 11, color: '#6b6b7a', fontFamily: 'monospace' }}>
               #{order.id.slice(0, 8).toUpperCase()}
-            </div>
+            </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 9, fontWeight: 700, color: cfg.color, background: `${cfg.color}15`, border: `1px solid ${cfg.color}30`, borderRadius: 20, padding: '3px 10px', letterSpacing: 1, textTransform: 'uppercase' }}>
               {cfg.label}
             </span>
-            <span style={{ fontSize: 16, color: '#4a4a5a', transition: 'transform 0.2s', transform: expanded ? 'rotate(180deg)' : 'none' }}>
+            <span style={{ fontSize: 16, color: '#4a4a5a', display: 'inline-block', transition: 'transform 0.2s', transform: expanded ? 'rotate(180deg)' : 'none' }}>
               ⌄
             </span>
           </div>
         </div>
 
-        {/* Product preview */}
         {order.product && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ width: 40, height: 40, borderRadius: 8, background: '#ffffff08', overflow: 'hidden', flexShrink: 0 }}>
               {order.product.images?.[0] ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={order.product.images[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>📦</div>}
+              ) : (
+                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>📦</div>
+              )}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -206,19 +210,20 @@ export function OrderCard({ order, onReview }: Props) {
         )}
       </button>
 
-      {/* ── Expanded Content ────────────────────── */}
+      {/* ── Expanded ───────────────────────────── */}
       {expanded && (
         <div style={{ padding: '0 16px 16px' }}>
 
-          {/* Timeline */}
           <OrderTimeline status={order.status} />
 
-          {/* Timeline events from backend */}
+          {/* History from backend */}
           {order.timeline && order.timeline.length > 0 && (
             <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 10, color: '#4a4a5a', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700, marginBottom: 10 }}>History</div>
+              <div style={{ fontSize: 10, color: '#4a4a5a', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700, marginBottom: 10 }}>
+                History
+              </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {[...order.timeline].reverse().map((event: { status: string; note?: string; created_at?: string }, i: number) => {
+                {[...order.timeline].reverse().map((event: OrderTimelineEvent, i: number) => {
                   const eCfg = STATUS_CONFIG[event.status.toLowerCase()] ?? STATUS_CONFIG.pending;
                   return (
                     <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
@@ -248,7 +253,6 @@ export function OrderCard({ order, onReview }: Props) {
             </div>
           )}
 
-          {/* Review Button */}
           {canReview && !showReview && (
             <button onClick={() => setShowReview(true)}
               style={{ width: '100%', padding: '11px', borderRadius: 12, background: 'rgba(240,192,64,0.08)', border: '1px solid rgba(240,192,64,0.2)', color: '#f0c040', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
@@ -259,8 +263,9 @@ export function OrderCard({ order, onReview }: Props) {
           {showReview && (
             <ReviewForm onSubmit={handleReview} onCancel={() => setShowReview(false)} />
           )}
+
         </div>
       )}
     </div>
   );
-                          }
+}
