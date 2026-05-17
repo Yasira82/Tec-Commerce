@@ -58,7 +58,20 @@ function GridCard({ product, isMine, onBuy, onDelete, onEdit }: {
   const image   = product.images?.[0];
 
   return (
-    <div onClick={() => !isMine && router.push(`/app/${product.id}`)}
+ <div onClick={() => !isMine && router.push(`/app/${product.id}`)}
+  style={{ background: '#0f0f1a', ... }}>
+
+// ✅ بعد
+<div data-testid={`card-${product.id}`}
+  onClick={() => !isMine && router.push(`/app/${product.id}`)}
+  style={{ background: '#0f0f1a', ... }}>
+
+// ── Filter button — أضف data-testid ────────────
+// ❌ قبل
+<button onClick={() => setShowFilters(p => !p)}
+
+// ✅ بعد
+<button data-testid="filter-toggle" onClick={() => setShowFilters(p => !p)}   
       style={{ background: '#0f0f1a', border: '1px solid rgba(212,175,55,0.1)', borderRadius: 16, overflow: 'hidden', cursor: isMine ? 'default' : 'pointer', position: 'relative' }}>
 
       {/* Image */}
