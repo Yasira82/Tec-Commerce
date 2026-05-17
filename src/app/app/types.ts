@@ -1,4 +1,4 @@
-export type MainTab = 'products' | 'orders' | 'sell' | 'search';
+export type MainTab = 'products' | 'orders' | 'sell' | 'search' | 'sales';
 
 export type ProductCategory =
   | 'Electronics'
