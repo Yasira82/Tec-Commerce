@@ -14,6 +14,41 @@ interface Props {
   onAddFirst:  () => void;
 }
 
+// ── Product Card Skeleton ──────────────────────────────────────
+function ProductCardSkeleton() {
+  const shimmer: React.CSSProperties = {
+    background: 'linear-gradient(90deg,#ffffff05 25%,#ffffff10 50%,#ffffff05 75%)',
+    backgroundSize: '200% 100%',
+    animation: 'tec-shimmer 1.5s infinite',
+    borderRadius: 8,
+  };
+  return (
+    <div style={{ background: '#0f0f1a', border: '1px solid #ffffff08', borderRadius: 20, overflow: 'hidden', marginBottom: 12 }}>
+      {/* Image */}
+      <div style={{ ...shimmer, height: 180, borderRadius: 0 }} />
+      <div style={{ padding: '14px 16px' }}>
+        {/* Title */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+          <div style={{ flex: 1, marginRight: 12 }}>
+            <div style={{ ...shimmer, height: 18, marginBottom: 8, width: '75%' }} />
+            <div style={{ ...shimmer, height: 12, width: '40%' }} />
+          </div>
+          <div style={{ ...shimmer, height: 28, width: 60 }} />
+        </div>
+        {/* Tags */}
+        <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+          {[80, 70, 60].map(w => (
+            <div key={w} style={{ ...shimmer, height: 22, width: w }} />
+          ))}
+        </div>
+        {/* Button */}
+        <div style={{ ...shimmer, height: 44, borderRadius: 12 }} />
+      </div>
+    </div>
+  );
+}
+
+// ── Main ───────────────────────────────────────────────────────
 export function ProductsTab({ products, userId, dataLoading, onBuy, onDelete, onEdit, onAddFirst }: Props) {
   const [search,   setSearch]   = useState('');
   const [category, setCategory] = useState<ProductCategory | 'All'>('All');
@@ -35,74 +70,61 @@ export function ProductsTab({ products, userId, dataLoading, onBuy, onDelete, on
     return result;
   }, [products, category, showMine, search, userId]);
 
-  if (dataLoading) {
-    return (
-      <div style={{ textAlign: 'center', padding: 40, color: '#4a4a5a' }}>
-        <div style={{ width: 32, height: 32, borderRadius: '50%', border: '3px solid #d4af3730',
-          borderTop: '3px solid #d4af37', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
-        Loading products...
-      </div>
-    );
-  }
-
   return (
     <div>
-      {/* Search */}
+      {/* ── Search ────────────────────────────────── */}
       <div style={{ position: 'relative', marginBottom: 12 }}>
         <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14 }}>🔍</span>
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search products, categories, countries..."
-          style={{ width: '100%', background: '#0d0d14', border: '1px solid #ffffff10',
-            borderRadius: 14, padding: '12px 12px 12px 36px', color: '#fff',
-            fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+          style={{ width: '100%', background: '#0d0d14', border: '1px solid #ffffff10', borderRadius: 14, padding: '12px 12px 12px 36px', color: '#fff', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
         />
         {search && (
           <button onClick={() => setSearch('')}
-            style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
-              background: 'none', border: 'none', color: '#4a4a5a', cursor: 'pointer', fontSize: 16 }}>
+            style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#4a4a5a', cursor: 'pointer', fontSize: 16 }}>
             ✕
           </button>
         )}
       </div>
 
-      {/* Category Filter */}
+      {/* ── Category Filter ───────────────────────── */}
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 12, paddingBottom: 4 }}>
         <button onClick={() => setCategory('All')}
-          style={{ padding: '6px 14px', borderRadius: 20, whiteSpace: 'nowrap', cursor: 'pointer',
-            fontSize: 11, fontWeight: 600,
-            background: category === 'All' ? '#d4af3712' : '#ffffff08',
-            color:      category === 'All' ? '#d4af37'   : '#4a4a5a',
-            border:     category === 'All' ? '1px solid #d4af3730' : '1px solid transparent' }}>
+          style={{ padding: '6px 14px', borderRadius: 20, whiteSpace: 'nowrap', cursor: 'pointer', fontSize: 11, fontWeight: 600, background: category === 'All' ? '#d4af3712' : '#ffffff08', color: category === 'All' ? '#d4af37' : '#4a4a5a', border: category === 'All' ? '1px solid #d4af3730' : '1px solid transparent' }}>
           All
         </button>
         {CATEGORIES.map(cat => (
           <button key={cat} onClick={() => setCategory(cat)}
-            style={{ padding: '6px 14px', borderRadius: 20, whiteSpace: 'nowrap', cursor: 'pointer',
-              fontSize: 11, fontWeight: 600,
-              background: category === cat ? '#d4af3712' : '#ffffff08',
-              color:      category === cat ? '#d4af37'   : '#4a4a5a',
-              border:     category === cat ? '1px solid #d4af3730' : '1px solid transparent' }}>
+            style={{ padding: '6px 14px', borderRadius: 20, whiteSpace: 'nowrap', cursor: 'pointer', fontSize: 11, fontWeight: 600, background: category === cat ? '#d4af3712' : '#ffffff08', color: category === cat ? '#d4af37' : '#4a4a5a', border: category === cat ? '1px solid #d4af3730' : '1px solid transparent' }}>
             {CATEGORY_ICONS[cat]} {cat}
           </button>
         ))}
       </div>
 
-      {/* My Products Toggle */}
+      {/* ── Count + My Products ───────────────────── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <span style={{ fontSize: 11, color: '#4a4a5a' }}>{filtered.length} products</span>
+        <span style={{ fontSize: 11, color: '#4a4a5a' }}>
+          {dataLoading ? 'Loading...' : `${filtered.length} products`}
+        </span>
         <button onClick={() => setShowMine(p => !p)}
-          style={{ padding: '6px 14px', borderRadius: 20, cursor: 'pointer', fontSize: 11, fontWeight: 600,
-            background: showMine ? '#d4af3712' : '#ffffff08',
-            color:      showMine ? '#d4af37'   : '#4a4a5a',
-            border:     showMine ? '1px solid #d4af3730' : '1px solid transparent' }}>
+          style={{ padding: '6px 14px', borderRadius: 20, cursor: 'pointer', fontSize: 11, fontWeight: 600, background: showMine ? '#d4af3712' : '#ffffff08', color: showMine ? '#d4af37' : '#4a4a5a', border: showMine ? '1px solid #d4af3730' : '1px solid transparent' }}>
           {showMine ? '✅ My Products' : 'My Products'}
         </button>
       </div>
 
-      {/* Products */}
-      {filtered.length === 0 ? (
+      {/* ── Skeleton Cards ────────────────────────── */}
+      {dataLoading && (
+        <>
+          <ProductCardSkeleton />
+          <ProductCardSkeleton />
+          <ProductCardSkeleton />
+        </>
+      )}
+
+      {/* ── Products ──────────────────────────────── */}
+      {!dataLoading && filtered.length === 0 && (
         <div style={{ textAlign: 'center', padding: 40 }}>
           <div style={{ fontSize: 48, marginBottom: 12 }}>🛒</div>
           <div style={{ color: '#4a4a5a', fontSize: 14, marginBottom: 16 }}>
@@ -110,23 +132,21 @@ export function ProductsTab({ products, userId, dataLoading, onBuy, onDelete, on
           </div>
           {!search && (
             <button onClick={onAddFirst}
-              style={{ padding: '10px 24px', borderRadius: 12,
-                background: 'linear-gradient(135deg,#d4af37,#b8882a)',
-                border: 'none', color: '#0a0800', fontWeight: 700, cursor: 'pointer' }}>
+              style={{ padding: '10px 24px', borderRadius: 12, background: 'linear-gradient(135deg,#d4af37,#b8882a)', border: 'none', color: '#0a0800', fontWeight: 700, cursor: 'pointer' }}>
               Add First Product
             </button>
           )}
         </div>
-      ) : (
-        filtered.map(p => (
-          <ProductCard key={p.id} product={p}
-            onBuy={onBuy}
-            isMine={p.sellerId === userId}
-            onDelete={onDelete}
-            onEdit={onEdit}
-          />
-        ))
       )}
+
+      {!dataLoading && filtered.map(p => (
+        <ProductCard key={p.id} product={p}
+          onBuy={onBuy}
+          isMine={p.sellerId === userId}
+          onDelete={onDelete}
+          onEdit={onEdit}
+        />
+      ))}
     </div>
   );
 }
