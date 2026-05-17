@@ -68,7 +68,7 @@ describe('OrderCard', () => {
     render(React.createElement(OrderCard, { order: makeOrder({ status: 'cancelled' }) }));
     const header = screen.getByText('Test Product').closest('button');
     fireEvent.click(header!);
-    expect(screen.getByText(/cancelled/i)).toBeDefined();
+    expect(screen.getAllByText(/cancelled/i).length).toBeGreaterThan(0);
   });
 
   // ── Timeline Events ───────────────────────────────────────────
