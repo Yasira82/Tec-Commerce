@@ -11,7 +11,7 @@ vi.mock('../components/ProductCard', () => ({
     React.createElement('div', { 'data-testid': `card-${product.id}` },
       React.createElement('span', null, product.title),
       React.createElement('span', null, `${product.price}π`),
-      React.createElement('button', { onClick: () => onBuy(product),   'data-testid': `buy-${product.id}`    }, 'Buy'),
+      React.createElement('button', { onClick: () => onBuy(product),       'data-testid': `buy-${product.id}` }, 'Buy'),
       React.createElement('button', { onClick: () => onDelete(product.id), 'data-testid': `del-${product.id}` }, 'Del'),
     ),
 }));
@@ -53,7 +53,6 @@ describe('ProductsTab', () => {
 
   it('يعرض skeleton لو dataLoading', () => {
     render(React.createElement(ProductsTab, { ...defaultProps, products: [], dataLoading: true }));
-    // Skeleton مش products
     expect(screen.queryByTestId('card-prod-1')).toBeNull();
   });
 
@@ -65,13 +64,12 @@ describe('ProductsTab', () => {
   it('يعرض زر Add First Product في الـ empty state', () => {
     const onAddFirst = vi.fn();
     render(React.createElement(ProductsTab, { ...defaultProps, products: [], onAddFirst }));
-    const btn = screen.getByText(/add first product/i);
-    fireEvent.click(btn);
+    fireEvent.click(screen.getByText(/add first product/i));
     expect(onAddFirst).toHaveBeenCalledOnce();
   });
 
   it('يعرض المنتجات', () => {
-    const products = [makeProduct({ id: 'p1', title: 'Laptop' }), makeProduct({ id: 'p2', title: 'Phone' })];
+    const products = [makeProduct({ id: 'p1' }), makeProduct({ id: 'p2' })];
     render(React.createElement(ProductsTab, { ...defaultProps, products }));
     expect(screen.getByTestId('card-p1')).toBeDefined();
     expect(screen.getByTestId('card-p2')).toBeDefined();
@@ -88,20 +86,17 @@ describe('ProductsTab', () => {
   it('بيفلتر بالـ search', () => {
     const products = [
       makeProduct({ id: 'p1', title: 'Laptop Pro' }),
-      makeProduct({ id: 'p2', title: 'Phone X' }),
+      makeProduct({ id: 'p2', title: 'Phone X'   }),
     ];
     render(React.createElement(ProductsTab, { ...defaultProps, products }));
-    const input = screen.getByPlaceholderText(/search/i);
-    fireEvent.change(input, { target: { value: 'laptop' } });
+    fireEvent.change(screen.getByPlaceholderText(/search/i), { target: { value: 'laptop' } });
     expect(screen.getByTestId('card-p1')).toBeDefined();
     expect(screen.queryByTestId('card-p2')).toBeNull();
   });
 
   it('بيعرض no products found لو الـ search مالقاش حاجة', () => {
-    const products = [makeProduct({ id: 'p1', title: 'Laptop' })];
-    render(React.createElement(ProductsTab, { ...defaultProps, products }));
-    const input = screen.getByPlaceholderText(/search/i);
-    fireEvent.change(input, { target: { value: 'xyz-not-found' } });
+    render(React.createElement(ProductsTab, { ...defaultProps, products: [makeProduct({ id: 'p1' })] }));
+    fireEvent.change(screen.getByPlaceholderText(/search/i), { target: { value: 'xyz-not-found' } });
     expect(screen.getByText(/no products/i)).toBeDefined();
   });
 
@@ -113,8 +108,7 @@ describe('ProductsTab', () => {
       makeProduct({ id: 'p2', category: 'Fashion'     as const }),
     ];
     render(React.createElement(ProductsTab, { ...defaultProps, products }));
-    const fashionBtn = screen.getByText(/Fashion/);
-    fireEvent.click(fashionBtn);
+    fireEvent.click(screen.getByText(/Fashion/));
     expect(screen.queryByTestId('card-p1')).toBeNull();
     expect(screen.getByTestId('card-p2')).toBeDefined();
   });
@@ -135,29 +129,24 @@ describe('ProductsTab', () => {
 
   it('بيفلتر بـ min price', () => {
     const products = [
-      makeProduct({ id: 'p1', price: 10 }),
+      makeProduct({ id: 'p1', price: 10  }),
       makeProduct({ id: 'p2', price: 100 }),
     ];
     render(React.createElement(ProductsTab, { ...defaultProps, products }));
-    // افتح الـ filter panel
-    const filterBtn = screen.getByText('⚙️', { exact: false });
-    fireEvent.click(filterBtn);
-    const [minInput] = screen.getAllByPlaceholderText('Min');
-    fireEvent.change(minInput, { target: { value: '50' } });
+    fireEvent.click(screen.getByTestId('filter-toggle'));
+    fireEvent.change(screen.getByPlaceholderText('Min'), { target: { value: '50' } });
     expect(screen.queryByTestId('card-p1')).toBeNull();
     expect(screen.getByTestId('card-p2')).toBeDefined();
   });
 
   it('بيفلتر بـ max price', () => {
     const products = [
-      makeProduct({ id: 'p1', price: 10 }),
+      makeProduct({ id: 'p1', price: 10  }),
       makeProduct({ id: 'p2', price: 100 }),
     ];
     render(React.createElement(ProductsTab, { ...defaultProps, products }));
-    const filterBtn = screen.getByText('⚙️', { exact: false });
-    fireEvent.click(filterBtn);
-    const [, maxInput] = screen.getAllByPlaceholderText('Max');
-    fireEvent.change(maxInput, { target: { value: '50' } });
+    fireEvent.click(screen.getByTestId('filter-toggle'));
+    fireEvent.change(screen.getByPlaceholderText('Max'), { target: { value: '50' } });
     expect(screen.getByTestId('card-p1')).toBeDefined();
     expect(screen.queryByTestId('card-p2')).toBeNull();
   });
@@ -166,14 +155,12 @@ describe('ProductsTab', () => {
 
   it('بيفلتر بالـ country', () => {
     const products = [
-      makeProduct({ id: 'p1', shipping: { country: 'Egypt',  city: 'Cairo',  shipsTo: [], shippingCost: 0, estimatedDays: '3d' } }),
-      makeProduct({ id: 'p2', shipping: { country: 'UAE',    city: 'Dubai',  shipsTo: [], shippingCost: 0, estimatedDays: '5d' } }),
+      makeProduct({ id: 'p1', shipping: { country: 'Egypt', city: 'Cairo', shipsTo: [], shippingCost: 0, estimatedDays: '3d' } }),
+      makeProduct({ id: 'p2', shipping: { country: 'UAE',   city: 'Dubai', shipsTo: [], shippingCost: 0, estimatedDays: '5d' } }),
     ];
     render(React.createElement(ProductsTab, { ...defaultProps, products }));
-    const filterBtn = screen.getByText('⚙️', { exact: false });
-    fireEvent.click(filterBtn);
-    const select = screen.getByDisplayValue('All Countries');
-    fireEvent.change(select, { target: { value: 'Egypt' } });
+    fireEvent.click(screen.getByTestId('filter-toggle'));
+    fireEvent.change(screen.getByDisplayValue('All Countries'), { target: { value: 'Egypt' } });
     expect(screen.getByTestId('card-p1')).toBeDefined();
     expect(screen.queryByTestId('card-p2')).toBeNull();
   });
@@ -186,18 +173,16 @@ describe('ProductsTab', () => {
       makeProduct({ id: 'p2', price: 10,  title: 'Cheap',     createdAt: '2024-01-02' }),
     ];
     render(React.createElement(ProductsTab, { ...defaultProps, products }));
-    const select = screen.getByDisplayValue('Newest');
-    fireEvent.change(select, { target: { value: 'price_asc' } });
-    const cards = screen.getAllByText(/π/);
-    // السعر الأول المعروض يكون الأصغر
-    expect(cards[0].textContent).toContain('10');
+    fireEvent.change(screen.getByDisplayValue('Newest'), { target: { value: 'price_asc' } });
+    const cards = document.querySelectorAll('[data-testid^="card-"]');
+    expect(cards[0].getAttribute('data-testid')).toBe('card-p2');
   });
 
   // ── My Products ───────────────────────────────────────────────
 
   it('Mine filter يعرض منتجات اليوزر بس', () => {
     const products = [
-      makeProduct({ id: 'p1', sellerId: 'user-1' }),
+      makeProduct({ id: 'p1', sellerId: 'user-1'     }),
       makeProduct({ id: 'p2', sellerId: 'other-user' }),
     ];
     render(React.createElement(ProductsTab, { ...defaultProps, products, userId: 'user-1' }));
@@ -210,14 +195,12 @@ describe('ProductsTab', () => {
 
   it('Reset Filters يرجع كل المنتجات', () => {
     const products = [
-      makeProduct({ id: 'p1', price: 10 }),
+      makeProduct({ id: 'p1', price: 10  }),
       makeProduct({ id: 'p2', price: 200 }),
     ];
     render(React.createElement(ProductsTab, { ...defaultProps, products }));
-    const filterBtn = screen.getByText('⚙️', { exact: false });
-    fireEvent.click(filterBtn);
-    const [minInput] = screen.getAllByPlaceholderText('Min');
-    fireEvent.change(minInput, { target: { value: '100' } });
+    fireEvent.click(screen.getByTestId('filter-toggle'));
+    fireEvent.change(screen.getByPlaceholderText('Min'), { target: { value: '100' } });
     expect(screen.queryByTestId('card-p1')).toBeNull();
     fireEvent.click(screen.getByText(/reset filters/i));
     expect(screen.getByTestId('card-p1')).toBeDefined();
@@ -235,8 +218,7 @@ describe('ProductsTab', () => {
   });
 
   it('مش بيعرض Pagination لو المنتجات أقل من PAGE_SIZE', () => {
-    const products = [makeProduct({ id: 'p1' })];
-    render(React.createElement(ProductsTab, { ...defaultProps, products }));
+    render(React.createElement(ProductsTab, { ...defaultProps, products: [makeProduct({ id: 'p1' })] }));
     expect(screen.queryByText('→')).toBeNull();
   });
 
