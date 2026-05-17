@@ -8,6 +8,7 @@ import { ProductsTab }                      from './components/ProductsTab';
 import { OrdersTab }                        from './components/OrdersTab';
 import { AddProductForm }                   from './components/AddProductForm';
 import { EditProductModal }                 from './components/EditProductModal';
+import { SellerOrderCard }                  from './components/SellerOrderCard';
 import { Product, Order, MainTab }          from './types';
 
 const HUB_URL      = process.env.NEXT_PUBLIC_HUB_URL      ?? 'https://hub.tecosystem.app';
@@ -28,12 +29,13 @@ const getTokenFromCookie = (): string | null => {
 function CommercePageInner() {
   const { user, isAuthenticated, isLoading } = usePiAuth();
 
-  const [products,    setProducts]    = useState<Product[]>([]);
-  const [orders,      setOrders]      = useState<Order[]>([]);
-  const [activeTab,   setActiveTab]   = useState<MainTab>('products');
-  const [dataLoading, setDataLoading] = useState(true);
-  const [editProduct, setEditProduct] = useState<Product | null>(null);
-  const [toast,       setToast]       = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+  const [products,      setProducts]      = useState<Product[]>([]);
+  const [orders,        setOrders]        = useState<Order[]>([]);
+  const [sellerOrders,  setSellerOrders]  = useState<Order[]>([]);
+  const [activeTab,     setActiveTab]     = useState<MainTab>('products');
+  const [dataLoading,   setDataLoading]   = useState(true);
+  const [editProduct,   setEditProduct]   = useState<Product | null>(null);
+  const [toast,         setToast]         = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
   const showToast = useCallback((msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type });
@@ -81,6 +83,15 @@ function CommercePageInner() {
     } catch { /* silent */ }
   }, [refreshToken]);
 
+  const fetchSellerOrders = useCallback(async () => {
+    try {
+      const res = await fetch('/api/bff/commerce/orders?role=seller', {
+        credentials: 'include', cache: 'no-store',
+      });
+      if (res.ok) { const d = await res.json(); setSellerOrders(d?.orders ?? []); }
+    } catch { /* silent */ }
+  }, []);
+
   useEffect(() => {
     if (isLoading) return;
     const token = getTokenFromCookie();
@@ -127,10 +138,7 @@ function CommercePageInner() {
     } catch { showToast('Failed to delete', 'error'); }
   }, [fetchProducts, showToast]);
 
-  const handleEdit = useCallback((product: Product) => {
-    setEditProduct(product);
-  }, []);
-
+  const handleEdit        = useCallback((product: Product) => { setEditProduct(product); }, []);
   const handleEditSuccess = useCallback((updated: Product) => {
     setProducts(prev => prev.map(p => p.id === updated.id ? updated : p));
     showToast('Product updated! ✅');
@@ -147,15 +155,29 @@ function CommercePageInner() {
     } catch { showToast('Failed to submit review', 'error'); }
   }, [fetchOrders, showToast]);
 
+  const handleStatusUpdate = useCallback(async (orderId: string, status: string, note?: string) => {
+    try {
+      const res = await fetch(`/api/bff/commerce/orders/${orderId}/status`, {
+        method: 'PATCH', credentials: 'include',
+        headers: { 'Content-Type': 'application/json', 'x-csrf-token': getCsrfToken() },
+        body: JSON.stringify({ status, note }),
+      });
+      if (res.ok) { showToast('Order updated ✅'); fetchSellerOrders(); }
+      else showToast('Failed to update', 'error');
+    } catch { showToast('Failed to update', 'error'); }
+  }, [fetchSellerOrders, showToast]);
+
   useEffect(() => {
     fetchProducts();
     fetchOrders();
-  }, [fetchProducts, fetchOrders]);
+    fetchSellerOrders();
+  }, [fetchProducts, fetchOrders, fetchSellerOrders]);
 
   const token = typeof window !== 'undefined' ? getTokenFromCookie() : null;
   if (isLoading || (!isAuthenticated && !token)) return <CommerceSkeleton />;
 
   const myProductsCount = products.filter(p => p.sellerId === user?.id).length;
+  const pendingSales    = sellerOrders.filter(o => o.status === 'pending').length;
 
   return (
     <div style={{
@@ -208,8 +230,7 @@ function CommercePageInner() {
         background: 'rgba(2,2,5,0.95)', backdropFilter: 'blur(20px)', zIndex: 100,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <button className="btn"
-            onClick={() => { window.location.href = `${HUB_URL}/hub`; }}
+          <button className="btn" onClick={() => { window.location.href = `${HUB_URL}/hub`; }}
             style={{ background: '#ffffff08', border: '1px solid #ffffff10', borderRadius: 12, padding: '6px 10px', color: '#d4af37', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
             <span style={{ fontSize: 16 }}>🔷</span>
             <span style={{ fontSize: 8, color: '#4a4a5a', letterSpacing: 1 }}>HUB</span>
@@ -228,16 +249,17 @@ function CommercePageInner() {
       <div style={{ padding: '16px 16px 0' }} className="fade-in">
         <div style={{ borderRadius: 24, padding: '20px 24px', background: 'linear-gradient(135deg,#1a1208 0%,#0f0f1a 60%,#0a0f1f 100%)', border: '1px solid #d4af3725' }}>
           <div style={{ fontSize: 10, color: '#6b6b7a', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 12 }}>COMMERCE OVERVIEW</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
             {[
-              { label: 'Products', value: products.length.toString(), icon: '🛒' },
-              { label: 'My Items', value: myProductsCount.toString(),  icon: '📦' },
-              { label: 'Orders',   value: orders.length.toString(),    icon: '🧾' },
+              { label: 'Products', value: products.length.toString(),    icon: '🛒' },
+              { label: 'My Items', value: myProductsCount.toString(),     icon: '📦' },
+              { label: 'Orders',   value: orders.length.toString(),       icon: '🧾' },
+              { label: 'Sales',    value: sellerOrders.length.toString(), icon: '💰' },
             ].map(s => (
-              <div key={s.label} style={{ background: '#ffffff05', borderRadius: 12, padding: '10px 12px', textAlign: 'center' }}>
-                <div style={{ fontSize: 18, marginBottom: 4 }}>{s.icon}</div>
-                <div style={{ fontSize: 18, fontWeight: 900, color: '#d4af37' }}>{s.value}</div>
-                <div style={{ fontSize: 9, color: '#4a4a5a', letterSpacing: 1 }}>{s.label}</div>
+              <div key={s.label} style={{ background: '#ffffff05', borderRadius: 12, padding: '10px 8px', textAlign: 'center' }}>
+                <div style={{ fontSize: 16, marginBottom: 4 }}>{s.icon}</div>
+                <div style={{ fontSize: 16, fontWeight: 900, color: '#d4af37' }}>{s.value}</div>
+                <div style={{ fontSize: 8, color: '#4a4a5a', letterSpacing: 1 }}>{s.label}</div>
               </div>
             ))}
           </div>
@@ -245,14 +267,15 @@ function CommercePageInner() {
       </div>
 
       {/* ── Tabs ───────────────────────────────────── */}
-      <div style={{ padding: '14px 16px 0', display: 'flex', gap: 8 }}>
+      <div style={{ padding: '14px 16px 0', display: 'flex', gap: 6, overflowX: 'auto' }}>
         {([
           { key: 'products', label: '🛒 Products' },
           { key: 'orders',   label: '🧾 Orders'   },
+          { key: 'sales',    label: pendingSales > 0 ? `📦 Sales (${pendingSales})` : '📦 Sales' },
           { key: 'sell',     label: '+ Sell'       },
         ] as const).map(tab => (
           <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-            style={{ padding: '8px 16px', borderRadius: 20, cursor: 'pointer', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', background: activeTab === tab.key ? '#d4af3712' : '#ffffff08', color: activeTab === tab.key ? '#d4af37' : '#4a4a5a', border: activeTab === tab.key ? '1px solid #d4af3730' : '1px solid transparent', transition: 'all 0.2s' }}>
+            style={{ padding: '8px 14px', borderRadius: 20, cursor: 'pointer', fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap', background: activeTab === tab.key ? '#d4af3712' : '#ffffff08', color: activeTab === tab.key ? '#d4af37' : '#4a4a5a', border: activeTab === tab.key ? '1px solid #d4af3730' : '1px solid transparent', transition: 'all 0.2s' }}>
             {tab.label}
           </button>
         ))}
@@ -278,6 +301,29 @@ function CommercePageInner() {
             onShop={() => setActiveTab('products')}
           />
         )}
+        {activeTab === 'sales' && (
+          <div>
+            {sellerOrders.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: 40 }}>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>💰</div>
+                <div style={{ color: '#4a4a5a', fontSize: 14, marginBottom: 16 }}>No sales yet</div>
+                <button onClick={() => setActiveTab('products')}
+                  style={{ padding: '10px 24px', borderRadius: 12, background: 'linear-gradient(135deg,#d4af37,#b8882a)', border: 'none', color: '#0a0800', fontWeight: 700, cursor: 'pointer' }}>
+                  View Products
+                </button>
+              </div>
+            ) : (
+              <>
+                <div style={{ fontSize: 10, color: '#4a4a5a', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700, marginBottom: 12 }}>
+                  {sellerOrders.length} SALES · {pendingSales} PENDING
+                </div>
+                {sellerOrders.map(o => (
+                  <SellerOrderCard key={o.id} order={o} onUpdate={handleStatusUpdate} />
+                ))}
+              </>
+            )}
+          </div>
+        )}
         {activeTab === 'sell' && (
           <AddProductForm
             onSuccess={() => { fetchProducts(); setActiveTab('products'); showToast('Product published! 🚀'); }}
@@ -290,16 +336,22 @@ function CommercePageInner() {
         {([
           { key: 'products', icon: '🛒', label: 'Products' },
           { key: 'orders',   icon: '🧾', label: 'Orders'   },
+          { key: 'sales',    icon: '💰', label: 'Sales'    },
           { key: 'sell',     icon: '➕', label: 'Sell'     },
         ] as const).map(item => (
           <button key={item.key} className="btn" onClick={() => setActiveTab(item.key)}
-            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: 'none', border: 'none', cursor: 'pointer' }}>
-            <span style={{ fontSize: 20, filter: activeTab === item.key ? 'none' : 'grayscale(1) opacity(0.4)', transition: 'filter 0.2s, transform 0.2s', transform: activeTab === item.key ? 'scale(1.15)' : 'scale(1)' }}>
+            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: 'none', border: 'none', cursor: 'pointer', position: 'relative' }}>
+            <span style={{ fontSize: 18, filter: activeTab === item.key ? 'none' : 'grayscale(1) opacity(0.4)', transition: 'filter 0.2s, transform 0.2s', transform: activeTab === item.key ? 'scale(1.15)' : 'scale(1)' }}>
               {item.icon}
             </span>
-            <span style={{ fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', color: activeTab === item.key ? '#d4af37' : '#4a4a5a', fontWeight: activeTab === item.key ? 700 : 400 }}>
+            <span style={{ fontSize: 8, letterSpacing: 1, textTransform: 'uppercase', color: activeTab === item.key ? '#d4af37' : '#4a4a5a', fontWeight: activeTab === item.key ? 700 : 400 }}>
               {item.label}
             </span>
+            {item.key === 'sales' && pendingSales > 0 && (
+              <span style={{ position: 'absolute', top: -2, right: '20%', width: 14, height: 14, borderRadius: '50%', background: '#ef4444', fontSize: 8, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {pendingSales}
+              </span>
+            )}
             {activeTab === item.key && (
               <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#d4af37', marginTop: -2 }} />
             )}
@@ -312,4 +364,4 @@ function CommercePageInner() {
 
 export default function CommercePage() {
   return <ErrorBoundary><CommercePageInner /></ErrorBoundary>;
-               }
+            }
