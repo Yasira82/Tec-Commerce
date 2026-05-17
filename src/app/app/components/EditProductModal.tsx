@@ -23,6 +23,14 @@ const labelStyle: React.CSSProperties = {
 };
 
 export function EditProductModal({ product, onClose, onSuccess }: Props) {
+  const shipping = product.shipping as {
+    country?: string; city?: string; shipsTo?: string[];
+    shippingCost?: number; estimatedDays?: string;
+  };
+  const contact = product.contact as {
+    whatsapp?: string; telegram?: string; email?: string;
+  };
+
   const [title,        setTitle]        = useState(product.title);
   const [description,  setDescription]  = useState(product.description ?? '');
   const [price,        setPrice]        = useState(String(product.price));
@@ -30,6 +38,11 @@ export function EditProductModal({ product, onClose, onSuccess }: Props) {
   const [images,       setImages]       = useState<string[]>(product.images ?? []);
   const [warranty,     setWarranty]     = useState(product.warranty ?? '');
   const [returnPolicy, setReturnPolicy] = useState(product.returnPolicy ?? '');
+  const [whatsapp,     setWhatsapp]     = useState(contact.whatsapp ?? '');
+  const [telegram,     setTelegram]     = useState(contact.telegram  ?? '');
+  const [email,        setEmail]        = useState(contact.email     ?? '');
+  const [city,         setCity]         = useState(shipping.city     ?? '');
+  const [country,      setCountry]      = useState(shipping.country  ?? '');
   const [saving,       setSaving]       = useState(false);
   const [uploading,    setUploading]    = useState(false);
   const [error,        setError]        = useState<string | null>(null);
@@ -50,7 +63,8 @@ export function EditProductModal({ product, onClose, onSuccess }: Props) {
           body: fd,
         });
         const data = await res.json();
-        if (data.url) uploaded.push(data.url);
+        const url  = data.url ?? data.data?.url;
+        if (url) uploaded.push(url);
       }
       setImages(p => [...p, ...uploaded]);
     } finally { setUploading(false); if (fileRef.current) fileRef.current.value = ''; }
@@ -64,10 +78,22 @@ export function EditProductModal({ product, onClose, onSuccess }: Props) {
         method: 'PATCH', credentials: 'include',
         headers: { 'Content-Type': 'application/json', 'x-csrf-token': getCsrf() },
         body: JSON.stringify({
-          title, description, price: parseFloat(price),
-          stock: parseInt(stock), images,
-          warranty: warranty || undefined,
+          title, description,
+          price:  parseFloat(price),
+          stock:  parseInt(stock),
+          images,
+          warranty:     warranty     || undefined,
           returnPolicy: returnPolicy || undefined,
+          contact: {
+            whatsapp: whatsapp || undefined,
+            telegram: telegram || undefined,
+            email:    email    || undefined,
+          },
+          shipping: {
+            ...shipping,
+            city:    city    || shipping.city,
+            country: country || shipping.country,
+          },
         }),
       });
       if (!res.ok) { const d = await res.json(); throw new Error(d.message ?? 'Update failed'); }
@@ -87,9 +113,7 @@ export function EditProductModal({ product, onClose, onSuccess }: Props) {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <div style={{ fontSize: 17, fontWeight: 700, color: '#fff' }}>✏️ Edit Product</div>
           <button onClick={onClose}
-            style={{ width: 32, height: 32, borderRadius: '50%', background: '#ffffff0a', border: 'none', color: '#6b6b7a', fontSize: 16, cursor: 'pointer' }}>
-            ×
-          </button>
+            style={{ width: 32, height: 32, borderRadius: '50%', background: '#ffffff0a', border: 'none', color: '#6b6b7a', fontSize: 16, cursor: 'pointer' }}>×</button>
         </div>
 
         {error && (
@@ -98,18 +122,16 @@ export function EditProductModal({ product, onClose, onSuccess }: Props) {
           </div>
         )}
 
-        {/* Images */}
+        {/* ── Images ─────────────────────────────── */}
         <label style={labelStyle}>Images ({images.length}/5)</label>
         {images.length > 0 && (
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
             {images.map((url, i) => (
-              <div key={url} style={{ position: 'relative', width: 64, height: 64 }}>
+              <div key={`${url}-${i}`} style={{ position: 'relative', width: 64, height: 64 }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={url} alt="" style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 10, border: '1px solid rgba(212,175,55,0.2)' }} />
                 <button onClick={() => setImages(p => p.filter((_, j) => j !== i))}
-                  style={{ position: 'absolute', top: -6, right: -6, width: 18, height: 18, borderRadius: '50%', background: '#ef4444', border: 'none', color: '#fff', fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>
-                  ×
-                </button>
+                  style={{ position: 'absolute', top: -6, right: -6, width: 18, height: 18, borderRadius: '50%', background: '#ef4444', border: 'none', color: '#fff', fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>×</button>
               </div>
             ))}
           </div>
@@ -124,7 +146,7 @@ export function EditProductModal({ product, onClose, onSuccess }: Props) {
           </>
         )}
 
-        {/* Fields */}
+        {/* ── Product Info ────────────────────────── */}
         <label style={labelStyle}>Title *</label>
         <input value={title} onChange={e => setTitle(e.target.value)} style={inputStyle} />
 
@@ -144,13 +166,52 @@ export function EditProductModal({ product, onClose, onSuccess }: Props) {
         </div>
 
         <label style={labelStyle}>Warranty</label>
-        <input value={warranty} onChange={e => setWarranty(e.target.value)} placeholder="e.g. 1 year" style={inputStyle} />
+        <input value={warranty} onChange={e => setWarranty(e.target.value)}
+          placeholder="e.g. 1 year" style={inputStyle} />
 
         <label style={labelStyle}>Return Policy</label>
-        <input value={returnPolicy} onChange={e => setReturnPolicy(e.target.value)} placeholder="e.g. 30-day returns" style={inputStyle} />
+        <input value={returnPolicy} onChange={e => setReturnPolicy(e.target.value)}
+          placeholder="e.g. 30-day returns" style={inputStyle} />
 
-        {/* Actions */}
-        <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+        {/* ── Address ─────────────────────────────── */}
+        <div style={{ height: 1, background: '#ffffff08', margin: '12px 0' }} />
+        <div style={{ fontSize: 10, color: '#6b6b7a', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12, fontWeight: 700 }}>
+          📍 Address
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <div>
+            <label style={labelStyle}>City</label>
+            <input value={city} onChange={e => setCity(e.target.value)}
+              placeholder="Cairo, Dubai..." style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>Country</label>
+            <input value={country} onChange={e => setCountry(e.target.value)}
+              placeholder="Egypt, UAE..." style={inputStyle} />
+          </div>
+        </div>
+
+        {/* ── Contact ─────────────────────────────── */}
+        <div style={{ height: 1, background: '#ffffff08', margin: '12px 0' }} />
+        <div style={{ fontSize: 10, color: '#6b6b7a', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12, fontWeight: 700 }}>
+          📞 Contact
+        </div>
+
+        <label style={labelStyle}>WhatsApp / Phone</label>
+        <input value={whatsapp} onChange={e => setWhatsapp(e.target.value)}
+          placeholder="+201234567890" style={inputStyle} />
+
+        <label style={labelStyle}>Telegram</label>
+        <input value={telegram} onChange={e => setTelegram(e.target.value)}
+          placeholder="@username" style={inputStyle} />
+
+        <label style={labelStyle}>Email</label>
+        <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+          placeholder="seller@email.com" style={inputStyle} />
+
+        {/* ── Actions ─────────────────────────────── */}
+        <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
           <button onClick={onClose}
             style={{ flex: 1, padding: '13px', borderRadius: 14, background: 'transparent', border: '1px solid #ffffff15', color: '#6b6b7a', fontSize: 14, cursor: 'pointer' }}>
             Cancel
@@ -160,7 +221,8 @@ export function EditProductModal({ product, onClose, onSuccess }: Props) {
             {saving ? '⏳ Saving...' : '💾 Save Changes'}
           </button>
         </div>
+
       </div>
     </div>
   );
-                          }
+        }
