@@ -57,17 +57,25 @@ export interface Review {
   createdAt: string;
 }
 
+export interface OrderTimelineEvent {
+  status:      string;
+  note?:       string;
+  created_at?: string;
+  created_by?: string;
+}
+
 export interface Order {
-  id:         string;
-  product_id: string;
-  product?:   Product;
-  buyer_id:   string;
-  status:     'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
-  total:      number;
+  id:          string;
+  product_id:  string;
+  product?:    Product;
+  buyer_id:    string;
+  status:      'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
+  total:       number;
   payment_id?: string;
-  txid?:      string;
-  createdAt:  string;
-  review?:    Review;
+  txid?:       string;
+  createdAt:   string;
+  review?:     Review;
+  timeline?:   OrderTimelineEvent[];
 }
 
 export const CATEGORIES: ProductCategory[] = [
