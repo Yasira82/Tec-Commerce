@@ -16,7 +16,7 @@ const HUB_URL      = process.env.NEXT_PUBLIC_HUB_URL      ?? 'https://hub.tecosy
 const COMMERCE_URL = process.env.NEXT_PUBLIC_COMMERCE_URL ?? 'https://commerce.tecosystem.app';
 const SSO_URL      = `${HUB_URL}/api/auth/sso?target=${encodeURIComponent(COMMERCE_URL)}`;
 
-type Prefs = { theme: 'dark' | 'light'; currency: 'PI' | 'USD'; hideBalance: boolean; };
+type Prefs = { theme: 'dark' | 'light'; currency: 'PI' | 'USD'; hideBalance: boolean; language: 'en' | 'ar'; };
 
 const getCsrfToken = (): string => {
   if (typeof document === 'undefined') return '';
@@ -32,8 +32,8 @@ const getTokenFromCookie = (): string | null => {
 const loadPrefs = (): Prefs => {
   try {
     const saved = localStorage.getItem('tec_commerce_prefs');
-    return saved ? JSON.parse(saved) : { theme: 'dark', currency: 'PI', hideBalance: false };
-  } catch { return { theme: 'dark', currency: 'PI', hideBalance: false }; }
+    return saved ? JSON.parse(saved) : { theme: 'dark', currency: 'PI', hideBalance: false, language: 'en' as const };
+  } catch { return { theme: 'dark', currency: 'PI', hideBalance: false, language: 'en' as const }; }
 };
 
 function CommercePageInner() {
