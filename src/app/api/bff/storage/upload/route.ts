@@ -1,14 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse }  from 'next/server';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { randomUUID }                 from 'crypto';
 
 const R2 = new S3Client({
   region:   'auto',
-  endpoint: process.env.R2_ENDPOINT ?? `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  endpoint: (process.env.R2_ENDPOINT ?? '').replace(/\/$/, '') ||
+    `https://${process.env.R2_ACCOUNT_ID ?? ''}.r2.cloudflarestorage.com`,
   credentials: {
     accessKeyId:     process.env.R2_ACCESS_KEY_ID     ?? '',
     secretAccessKey: process.env.R2_SECRET_ACCESS_KEY ?? '',
   },
+  // ✅ R2 لا يدعم AWS checksums
+  requestChecksumCalculation: 'WHEN_REQUIRED',
+  responseChecksumValidation: 'WHEN_REQUIRED',
 });
 
 const BUCKET     = process.env.R2_BUCKET_NAME ?? '';
@@ -19,17 +23,12 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const file     = formData.get('file') as File | null;
 
-    if (!file) {
+    if (!file)
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
-    }
-
-    if (!file.type.startsWith('image/')) {
+    if (!file.type.startsWith('image/'))
       return NextResponse.json({ error: 'Only images allowed' }, { status: 400 });
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > 5 * 1024 * 1024)
       return NextResponse.json({ error: 'Max file size is 5MB' }, { status: 400 });
-    }
 
     const folder = (formData.get('folder') as string) ?? 'products';
     const ext    = file.name.split('.').pop() ?? 'jpg';
@@ -51,10 +50,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       error:  'Upload failed',
       detail: err instanceof Error ? err.message : String(err),
-      bucket: BUCKET,
-      hasKey: !!process.env.R2_ACCESS_KEY_ID,
-      hasSec: !!process.env.R2_SECRET_ACCESS_KEY,
-      hasUrl: !!PUBLIC_URL,
     }, { status: 500 });
   }
 }
