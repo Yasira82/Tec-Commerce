@@ -9,17 +9,18 @@ const nextConfig = {
     formats:         ['image/avif', 'image/webp'],
     minimumCacheTTL: 86400,
     remotePatterns: [
-      { protocol: 'https', hostname: '**.vercel.app'  },
-      { protocol: 'https', hostname: '**.railway.app' },
-      { protocol: 'https', hostname: 'api.minepi.com' },
-      { protocol: 'https', hostname: '**.r2.dev'      },
-      { protocol: 'https', hostname: '**.cloudflare.com' },
+      { protocol: 'https', hostname: '**.vercel.app'         },
+      { protocol: 'https', hostname: '**.railway.app'        },
+      { protocol: 'https', hostname: 'api.minepi.com'        },
+      { protocol: 'https', hostname: '**.r2.dev'             },
+      { protocol: 'https', hostname: 'pub-*.r2.dev'          },
+      { protocol: 'https', hostname: '**.cloudflare.com'     },
+      { protocol: 'https', hostname: '**.cloudflarestorage.com' },
     ],
   },
 
   compress: true,
 
-  // ✅ FormData في App Router
   experimental: {
     serverActions: { bodySizeLimit: '10mb' },
   },
@@ -47,7 +48,7 @@ const nextConfig = {
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' sdk.minepi.com *.minepi.com",
               "connect-src 'self' https: wss:",
-              "img-src 'self' data: blob: *.railway.app *.vercel.app *.r2.dev *.cloudflare.com",
+              "img-src 'self' data: blob: *.railway.app *.vercel.app *.r2.dev pub-*.r2.dev *.cloudflarestorage.com *.cloudflare.com",
               "style-src 'self' 'unsafe-inline'",
               "font-src 'self' data:",
               "frame-src 'self' sdk.minepi.com *.minepi.com",
