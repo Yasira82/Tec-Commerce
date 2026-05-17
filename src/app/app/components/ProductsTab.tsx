@@ -21,13 +21,10 @@ interface Props {
 const PAGE_SIZE = 10;
 const GOLD      = '#d4af37';
 
-// ── Skeleton ───────────────────────────────────────────────────
 function GridSkeleton() {
   const shimmer: React.CSSProperties = {
     background: 'linear-gradient(90deg,#ffffff05 25%,#ffffff0f 50%,#ffffff05 75%)',
-    backgroundSize: '200% 100%',
-    animation: 'shimmer 1.5s infinite',
-    borderRadius: 8,
+    backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite', borderRadius: 8,
   };
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -45,7 +42,6 @@ function GridSkeleton() {
   );
 }
 
-// ── Compact Grid Card ──────────────────────────────────────────
 function GridCard({ product, isMine, onBuy, onDelete, onEdit }: {
   product:  Product;
   isMine:   boolean;
@@ -58,23 +54,10 @@ function GridCard({ product, isMine, onBuy, onDelete, onEdit }: {
   const image   = product.images?.[0];
 
   return (
- <div onClick={() => !isMine && router.push(`/app/${product.id}`)}
-  style={{ background: '#0f0f1a', ... }}>
-
-// ✅ بعد
-<div data-testid={`card-${product.id}`}
-  onClick={() => !isMine && router.push(`/app/${product.id}`)}
-  style={{ background: '#0f0f1a', ... }}>
-
-// ── Filter button — أضف data-testid ────────────
-// ❌ قبل
-<button onClick={() => setShowFilters(p => !p)}
-
-// ✅ بعد
-<button data-testid="filter-toggle" onClick={() => setShowFilters(p => !p)}   
+    <div data-testid={'card-' + product.id}
+      onClick={() => !isMine && router.push(`/app/${product.id}`)}
       style={{ background: '#0f0f1a', border: '1px solid rgba(212,175,55,0.1)', borderRadius: 16, overflow: 'hidden', cursor: isMine ? 'default' : 'pointer', position: 'relative' }}>
 
-      {/* Image */}
       <div style={{ position: 'relative', height: 130, background: '#0a0a12' }}>
         {image ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -94,7 +77,6 @@ function GridCard({ product, isMine, onBuy, onDelete, onEdit }: {
         )}
       </div>
 
-      {/* Info */}
       <div style={{ padding: '10px 12px' }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', lineHeight: 1.3, marginBottom: 4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
           {product.title}
@@ -131,17 +113,10 @@ function GridCard({ product, isMine, onBuy, onDelete, onEdit }: {
   );
 }
 
-// ── Filter Panel ───────────────────────────────────────────────
 function FilterPanel({ show, minPrice, maxPrice, country, onMinPrice, onMaxPrice, onCountry, onReset, isDark }: {
-  show:       boolean;
-  minPrice:   string;
-  maxPrice:   string;
-  country:    string;
-  onMinPrice: (v: string) => void;
-  onMaxPrice: (v: string) => void;
-  onCountry:  (v: string) => void;
-  onReset:    () => void;
-  isDark:     boolean;
+  show: boolean; minPrice: string; maxPrice: string; country: string;
+  onMinPrice: (v: string) => void; onMaxPrice: (v: string) => void;
+  onCountry: (v: string) => void; onReset: () => void; isDark: boolean;
 }) {
   if (!show) return null;
 
@@ -154,30 +129,23 @@ function FilterPanel({ show, minPrice, maxPrice, country, onMinPrice, onMaxPrice
 
   return (
     <div style={{ background: isDark ? '#0d0d14' : '#e8e8f0', border: `1px solid ${isDark ? '#ffffff08' : '#ddd'}`, borderRadius: 14, padding: '14px', marginBottom: 10 }}>
-
-      {/* Price Range */}
       <div style={{ marginBottom: 12 }}>
         <div style={{ fontSize: 10, color: '#6b6b7a', letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 700, marginBottom: 8 }}>
           💰 Price Range (π)
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <input type="number" value={minPrice} onChange={e => onMinPrice(e.target.value)}
-            placeholder="Min" style={inputStyle} />
+          <input type="number" value={minPrice} onChange={e => onMinPrice(e.target.value)} placeholder="Min" style={inputStyle} />
           <span style={{ color: '#4a4a5a', fontSize: 12 }}>—</span>
-          <input type="number" value={maxPrice} onChange={e => onMaxPrice(e.target.value)}
-            placeholder="Max" style={inputStyle} />
+          <input type="number" value={maxPrice} onChange={e => onMaxPrice(e.target.value)} placeholder="Max" style={inputStyle} />
         </div>
-
-        {/* Quick price buttons */}
         <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
           {[
-            { label: 'Under 10π',  min: '',   max: '10'  },
-            { label: '10–50π',     min: '10', max: '50'  },
-            { label: '50–100π',    min: '50', max: '100' },
-            { label: 'Over 100π',  min: '100', max: ''   },
+            { label: 'Under 10π', min: '',    max: '10'  },
+            { label: '10–50π',    min: '10',  max: '50'  },
+            { label: '50–100π',   min: '50',  max: '100' },
+            { label: 'Over 100π', min: '100', max: ''    },
           ].map(r => (
-            <button key={r.label}
-              onClick={() => { onMinPrice(r.min); onMaxPrice(r.max); }}
+            <button key={r.label} onClick={() => { onMinPrice(r.min); onMaxPrice(r.max); }}
               style={{ padding: '4px 10px', borderRadius: 20, fontSize: 10, cursor: 'pointer', background: minPrice === r.min && maxPrice === r.max ? `${GOLD}20` : isDark ? '#ffffff08' : '#d8d8e0', color: minPrice === r.min && maxPrice === r.max ? GOLD : '#4a4a5a', border: minPrice === r.min && maxPrice === r.max ? `1px solid ${GOLD}40` : '1px solid transparent', fontWeight: 600 }}>
               {r.label}
             </button>
@@ -185,7 +153,6 @@ function FilterPanel({ show, minPrice, maxPrice, country, onMinPrice, onMaxPrice
         </div>
       </div>
 
-      {/* Country */}
       <div style={{ marginBottom: 12 }}>
         <div style={{ fontSize: 10, color: '#6b6b7a', letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 700, marginBottom: 8 }}>
           📍 Ships From
@@ -197,7 +164,6 @@ function FilterPanel({ show, minPrice, maxPrice, country, onMinPrice, onMaxPrice
         </select>
       </div>
 
-      {/* Reset */}
       <button onClick={onReset}
         style={{ width: '100%', padding: '8px', borderRadius: 10, background: 'transparent', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
         ✕ Reset Filters
@@ -206,7 +172,6 @@ function FilterPanel({ show, minPrice, maxPrice, country, onMinPrice, onMaxPrice
   );
 }
 
-// ── Main ───────────────────────────────────────────────────────
 export function ProductsTab({ products, userId, dataLoading, onBuy, onDelete, onEdit, onAddFirst }: Props) {
   const [search,      setSearch]      = useState('');
   const [category,    setCategory]    = useState<ProductCategory | 'All'>('All');
@@ -219,18 +184,13 @@ export function ProductsTab({ products, userId, dataLoading, onBuy, onDelete, on
   const [maxPrice,    setMaxPrice]    = useState('');
   const [country,     setCountry]     = useState('');
 
-  const isDark = true; // Commerce is always dark by default
-
+  const isDark           = true;
   const hasActiveFilters = !!(minPrice || maxPrice || country);
 
-  const resetFilters = () => {
-    setMinPrice(''); setMaxPrice(''); setCountry('');
-    setPage(1);
-  };
+  const resetFilters = () => { setMinPrice(''); setMaxPrice(''); setCountry(''); setPage(1); };
 
   const filtered = useMemo(() => {
     let result = [...products];
-
     if (category !== 'All') result = result.filter(p => p.category === category);
     if (showMine)           result = result.filter(p => p.sellerId === userId);
     if (search.trim()) {
@@ -243,13 +203,12 @@ export function ProductsTab({ products, userId, dataLoading, onBuy, onDelete, on
         p.shipping.country.toLowerCase().includes(q),
       );
     }
-    if (minPrice)  result = result.filter(p => p.price >= parseFloat(minPrice));
-    if (maxPrice)  result = result.filter(p => p.price <= parseFloat(maxPrice));
-    if (country)   result = result.filter(p => p.shipping.country === country);
-
+    if (minPrice) result = result.filter(p => p.price >= parseFloat(minPrice));
+    if (maxPrice) result = result.filter(p => p.price <= parseFloat(maxPrice));
+    if (country)  result = result.filter(p => p.shipping.country === country);
     switch (sort) {
-      case 'price_asc':  result.sort((a, b) => a.price - b.price);  break;
-      case 'price_desc': result.sort((a, b) => b.price - a.price);  break;
+      case 'price_asc':  result.sort((a, b) => a.price - b.price);   break;
+      case 'price_desc': result.sort((a, b) => b.price - a.price);   break;
       case 'rating':     result.sort((a, b) => b.rating - a.rating); break;
       case 'newest':     result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()); break;
     }
@@ -272,8 +231,7 @@ export function ProductsTab({ products, userId, dataLoading, onBuy, onDelete, on
           placeholder="Search products..."
           style={{ width: '100%', background: '#0d0d14', border: '1px solid #ffffff10', borderRadius: 14, padding: '11px 80px 11px 36px', color: '#fff', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
         <div style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', display: 'flex', gap: 4 }}>
-          {/* Filter button */}
-          <button onClick={() => setShowFilters(p => !p)}
+          <button data-testid="filter-toggle" onClick={() => setShowFilters(p => !p)}
             style={{ padding: '5px 10px', borderRadius: 10, background: (showFilters || hasActiveFilters) ? `${GOLD}20` : '#ffffff08', border: `1px solid ${(showFilters || hasActiveFilters) ? `${GOLD}40` : '#ffffff10'}`, color: (showFilters || hasActiveFilters) ? GOLD : '#4a4a5a', fontSize: 11, cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
             ⚙️{hasActiveFilters && <span style={{ background: '#ef4444', color: '#fff', borderRadius: '50%', width: 14, height: 14, fontSize: 8, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>!</span>}
           </button>
@@ -286,13 +244,11 @@ export function ProductsTab({ products, userId, dataLoading, onBuy, onDelete, on
 
       {/* ── Filter Panel ───────────────────────── */}
       <FilterPanel
-        show={showFilters}
-        minPrice={minPrice} maxPrice={maxPrice} country={country}
+        show={showFilters} minPrice={minPrice} maxPrice={maxPrice} country={country}
         onMinPrice={v => { setMinPrice(v); setPage(1); }}
         onMaxPrice={v => { setMaxPrice(v); setPage(1); }}
         onCountry={v  => { setCountry(v);  setPage(1); }}
-        onReset={resetFilters}
-        isDark={isDark}
+        onReset={resetFilters} isDark={isDark}
       />
 
       {/* ── Category Pills ─────────────────────── */}
@@ -315,12 +271,10 @@ export function ProductsTab({ products, userId, dataLoading, onBuy, onDelete, on
           {filtered.length} {filtered.length === 1 ? 'product' : 'products'}
           {hasActiveFilters && <span style={{ color: GOLD, marginLeft: 4 }}>· filtered</span>}
         </span>
-
         <button onClick={() => { setShowMine(p => !p); setPage(1); }}
           style={{ padding: '5px 10px', borderRadius: 20, cursor: 'pointer', fontSize: 10, fontWeight: 600, background: showMine ? '#d4af3712' : '#ffffff08', color: showMine ? GOLD : '#4a4a5a', border: showMine ? `1px solid ${GOLD}30` : '1px solid transparent', whiteSpace: 'nowrap' }}>
           {showMine ? '✅ Mine' : 'Mine'}
         </button>
-
         <select value={sort} onChange={e => { setSort(e.target.value as SortKey); setPage(1); }}
           style={{ padding: '5px 8px', background: '#0d0d14', border: '1px solid #ffffff10', borderRadius: 10, color: '#fff', fontSize: 10, cursor: 'pointer', outline: 'none' }}>
           <option value="newest">Newest</option>
@@ -328,7 +282,6 @@ export function ProductsTab({ products, userId, dataLoading, onBuy, onDelete, on
           <option value="price_desc">Price ↓</option>
           <option value="rating">Rating</option>
         </select>
-
         <div style={{ display: 'flex', background: '#0d0d14', border: '1px solid #ffffff10', borderRadius: 10, overflow: 'hidden' }}>
           {(['grid', 'list'] as ViewMode[]).map(v => (
             <button key={v} onClick={() => setView(v)}
@@ -342,9 +295,7 @@ export function ProductsTab({ products, userId, dataLoading, onBuy, onDelete, on
       {/* ── Products ───────────────────────────── */}
       {paginated.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 40 }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>
-            {hasActiveFilters ? '🔍' : '🛒'}
-          </div>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>{hasActiveFilters ? '🔍' : '🛒'}</div>
           <div style={{ color: '#4a4a5a', fontSize: 14, marginBottom: 16 }}>
             {search || hasActiveFilters ? 'No products match your filters' : 'No products yet'}
           </div>
@@ -364,18 +315,14 @@ export function ProductsTab({ products, userId, dataLoading, onBuy, onDelete, on
       ) : view === 'grid' ? (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           {paginated.map(p => (
-            <GridCard key={p.id} product={p}
-              isMine={p.sellerId === userId}
-              onBuy={onBuy} onDelete={onDelete} onEdit={onEdit}
-            />
+            <GridCard key={p.id} product={p} isMine={p.sellerId === userId}
+              onBuy={onBuy} onDelete={onDelete} onEdit={onEdit} />
           ))}
         </div>
       ) : (
         paginated.map(p => (
-          <ProductCard key={p.id} product={p}
-            isMine={p.sellerId === userId}
-            onBuy={onBuy} onDelete={onDelete} onEdit={onEdit}
-          />
+          <ProductCard key={p.id} product={p} isMine={p.sellerId === userId}
+            onBuy={onBuy} onDelete={onDelete} onEdit={onEdit} />
         ))
       )}
 
@@ -408,4 +355,4 @@ export function ProductsTab({ products, userId, dataLoading, onBuy, onDelete, on
       )}
     </div>
   );
-            }
+        }
