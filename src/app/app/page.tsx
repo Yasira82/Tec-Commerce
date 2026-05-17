@@ -46,7 +46,7 @@ function CommercePageInner() {
   const [dataLoading,  setDataLoading]  = useState(true);
   const [editProduct,  setEditProduct]  = useState<Product | null>(null);
   const [drawerOpen,   setDrawerOpen]   = useState(false);
-  const [prefs,        setPrefs]        = useState<Prefs>({ theme: 'dark', currency: 'PI', hideBalance: false });
+  const [prefs,        setPrefs]        = useState<Prefs>({ theme: 'dark', currency: 'PI', hideBalance: false, language: 'en' });
   const [toast,        setToast]        = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
   // Load prefs from localStorage after hydration
