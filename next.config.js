@@ -12,11 +12,17 @@ const nextConfig = {
       { protocol: 'https', hostname: '**.vercel.app'  },
       { protocol: 'https', hostname: '**.railway.app' },
       { protocol: 'https', hostname: 'api.minepi.com' },
-      { protocol: 'https', hostname: '**.r2.dev'      }, // ✅ أضف
+      { protocol: 'https', hostname: '**.r2.dev'      },
+      { protocol: 'https', hostname: '**.cloudflare.com' },
     ],
   },
 
   compress: true,
+
+  // ✅ FormData في App Router
+  experimental: {
+    serverActions: { bodySizeLimit: '10mb' },
+  },
 
   webpack: (config) => {
     config.resolve.alias = {
@@ -41,7 +47,7 @@ const nextConfig = {
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' sdk.minepi.com *.minepi.com",
               "connect-src 'self' https: wss:",
-              "img-src 'self' data: blob: *.railway.app *.vercel.app *.r2.dev", // ✅ أضف
+              "img-src 'self' data: blob: *.railway.app *.vercel.app *.r2.dev *.cloudflare.com",
               "style-src 'self' 'unsafe-inline'",
               "font-src 'self' data:",
               "frame-src 'self' sdk.minepi.com *.minepi.com",
