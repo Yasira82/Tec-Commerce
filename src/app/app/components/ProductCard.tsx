@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState }        from 'react';
+import { useRouter }       from 'next/navigation';
 import { Product, ProductCategory, CATEGORY_ICONS } from '../types';
 
 interface Props {
@@ -37,6 +38,7 @@ function ImagePlaceholder({ category }: { category: ProductCategory }) {
 export function ProductCard({ product, onBuy, isMine, onDelete, onEdit }: Props) {
   const [imgIdx,   setImgIdx]   = useState(0);
   const [showInfo, setShowInfo] = useState(false);
+  const router = useRouter();
 
   const images   = product.images?.length > 0 ? product.images : [];
   const inStock  = product.stock > 0;
@@ -44,12 +46,15 @@ export function ProductCard({ product, onBuy, isMine, onDelete, onEdit }: Props)
   const condColor = product.condition === 'new' ? '#10b981' : '#f59e0b';
 
   return (
-    <div style={{
-      background: 'linear-gradient(180deg,#0f0f1a 0%,#0a0a12 100%)',
-      border: '1px solid rgba(212,175,55,0.12)',
-      borderRadius: 20, overflow: 'hidden', marginBottom: 12,
-      boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
-    }}>
+    <div
+      onClick={() => !isMine && router.push(`/app/${product.id}`)}
+      style={{
+        background: 'linear-gradient(180deg,#0f0f1a 0%,#0a0a12 100%)',
+        border: '1px solid rgba(212,175,55,0.12)',
+        borderRadius: 20, overflow: 'hidden', marginBottom: 12,
+        boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
+        cursor: isMine ? 'default' : 'pointer',
+      }}>
 
       {/* ── Image ────────────────────────────────── */}
       {images.length > 0 ? (
@@ -61,7 +66,7 @@ export function ProductCard({ product, onBuy, isMine, onDelete, onEdit }: Props)
           {images.length > 1 && (
             <div style={{ position: 'absolute', bottom: 10, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 5 }}>
               {images.map((_, i) => (
-                <button key={i} onClick={() => setImgIdx(i)}
+                <button key={i} onClick={e => { e.stopPropagation(); setImgIdx(i); }}
                   style={{ width: i === imgIdx ? 18 : 6, height: 6, borderRadius: 3, background: i === imgIdx ? GOLD : 'rgba(255,255,255,0.3)', border: 'none', cursor: 'pointer', padding: 0, transition: 'all 0.2s' }} />
               ))}
             </div>
@@ -143,7 +148,7 @@ export function ProductCard({ product, onBuy, isMine, onDelete, onEdit }: Props)
         )}
 
         {/* ── Seller Info Toggle ────────────────── */}
-        <button onClick={() => setShowInfo(p => !p)}
+        <button onClick={e => { e.stopPropagation(); setShowInfo(p => !p); }}
           style={{ width: '100%', background: '#ffffff05', border: '1px solid #ffffff0a', borderRadius: 10, padding: '9px 12px', color: '#4a4a5a', fontSize: 11, cursor: 'pointer', marginBottom: 10, textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span>👤 {product.sellerName ?? 'Seller info'}</span>
           <span style={{ fontSize: 9 }}>{showInfo ? '▲' : '▼'}</span>
@@ -154,18 +159,21 @@ export function ProductCard({ product, onBuy, isMine, onDelete, onEdit }: Props)
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: product.shipping.shipsTo.length > 0 ? 10 : 0 }}>
               {product.contact.whatsapp && (
                 <a href={`https://wa.me/${product.contact.whatsapp}`} target="_blank" rel="noreferrer"
+                  onClick={e => e.stopPropagation()}
                   style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 12px', background: 'rgba(37,211,102,0.1)', border: '1px solid rgba(37,211,102,0.25)', borderRadius: 8, color: '#25d366', fontSize: 11, fontWeight: 600, textDecoration: 'none' }}>
                   💬 WhatsApp
                 </a>
               )}
               {product.contact.telegram && (
                 <a href={`https://t.me/${product.contact.telegram}`} target="_blank" rel="noreferrer"
+                  onClick={e => e.stopPropagation()}
                   style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 12px', background: 'rgba(0,136,204,0.1)', border: '1px solid rgba(0,136,204,0.25)', borderRadius: 8, color: '#0088cc', fontSize: 11, fontWeight: 600, textDecoration: 'none' }}>
                   ✈️ Telegram
                 </a>
               )}
               {product.contact.email && (
                 <a href={`mailto:${product.contact.email}`}
+                  onClick={e => e.stopPropagation()}
                   style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 12px', background: '#ffffff08', border: '1px solid #ffffff15', borderRadius: 8, color: '#fff', fontSize: 11, fontWeight: 600, textDecoration: 'none' }}>
                   📧 Email
                 </a>
@@ -184,18 +192,22 @@ export function ProductCard({ product, onBuy, isMine, onDelete, onEdit }: Props)
           {isMine ? (
             <>
               {onEdit && (
-                <button data-testid={`edit-${product.id}`} onClick={() => onEdit(product)}
+                <button data-testid={`edit-${product.id}`}
+                  onClick={e => { e.stopPropagation(); onEdit(product); }}
                   style={{ flex: 1, padding: '11px', borderRadius: 12, background: 'rgba(126,184,247,0.08)', border: '1px solid rgba(126,184,247,0.2)', color: '#7eb8f7', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
                   ✏️ Edit
                 </button>
               )}
-              <button data-testid={`delete-${product.id}`} onClick={() => onDelete(product.id)}
+              <button data-testid={`delete-${product.id}`}
+                onClick={e => { e.stopPropagation(); onDelete(product.id); }}
                 style={{ flex: 1, padding: '11px', borderRadius: 12, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
                 🗑️ Delete
               </button>
             </>
           ) : (
-            <button data-testid={`buy-${product.id}`} onClick={() => onBuy(product)} disabled={!inStock}
+            <button data-testid={`buy-${product.id}`}
+              onClick={e => { e.stopPropagation(); onBuy(product); }}
+              disabled={!inStock}
               style={{ flex: 1, padding: '13px', borderRadius: 12, background: inStock ? `linear-gradient(135deg,${GOLD},${GOLD_D})` : '#ffffff0a', border: 'none', color: inStock ? '#0a0800' : '#4a4a5a', fontSize: 14, fontWeight: 800, cursor: inStock ? 'pointer' : 'not-allowed', letterSpacing: 0.3 }}>
               {inStock ? `Buy · ${product.price}π` : 'Out of Stock'}
             </button>
@@ -205,4 +217,4 @@ export function ProductCard({ product, onBuy, isMine, onDelete, onEdit }: Props)
       </div>
     </div>
   );
-                          }
+        }
