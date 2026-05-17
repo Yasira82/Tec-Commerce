@@ -35,14 +35,38 @@ function ImagePlaceholder({ category }: { category: ProductCategory }) {
   );
 }
 
+// ── Pi Browser Safe Contact ────────────────────────────────────
+function ContactItem({ icon, value }: { icon: string; value: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleTap = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(value).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {});
+  };
+  return (
+    <button onClick={handleTap}
+      style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: copied ? 'rgba(16,185,129,0.1)' : '#ffffff08', border: `1px solid ${copied ? 'rgba(16,185,129,0.3)' : '#ffffff15'}`, borderRadius: 10, color: copied ? '#10b981' : '#fff', fontSize: 11, fontWeight: 600, cursor: 'pointer', width: '100%', textAlign: 'left' }}>
+      <span>{icon}</span>
+      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {copied ? 'Copied!' : value}
+      </span>
+      <span style={{ fontSize: 9, color: copied ? '#10b981' : '#4a4a5a', flexShrink: 0 }}>
+        {copied ? '✓' : 'Copy'}
+      </span>
+    </button>
+  );
+}
+
 export function ProductCard({ product, onBuy, isMine, onDelete, onEdit }: Props) {
   const [imgIdx,   setImgIdx]   = useState(0);
   const [showInfo, setShowInfo] = useState(false);
   const router = useRouter();
 
-  const images   = product.images?.length > 0 ? product.images : [];
-  const inStock  = product.stock > 0;
-  const freeShip = product.shipping.shippingCost === 0;
+  const images    = product.images?.length > 0 ? product.images : [];
+  const inStock   = product.stock > 0;
+  const freeShip  = product.shipping.shippingCost === 0;
   const condColor = product.condition === 'new' ? '#10b981' : '#f59e0b';
 
   return (
@@ -62,7 +86,6 @@ export function ProductCard({ product, onBuy, isMine, onDelete, onEdit }: Props)
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={images[imgIdx]} alt={product.title}
             style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-
           {images.length > 1 && (
             <div style={{ position: 'absolute', bottom: 10, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 5 }}>
               {images.map((_, i) => (
@@ -71,16 +94,13 @@ export function ProductCard({ product, onBuy, isMine, onDelete, onEdit }: Props)
               ))}
             </div>
           )}
-
           <div style={{ position: 'absolute', top: 10, left: 10, background: `${condColor}20`, border: `1px solid ${condColor}40`, borderRadius: 20, padding: '3px 10px', fontSize: 9, fontWeight: 700, color: condColor, letterSpacing: 1.5, textTransform: 'uppercase' }}>
             {product.condition}
           </div>
-
           <div style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', borderRadius: 20, padding: '3px 10px', fontSize: 11 }}>
             {CATEGORY_ICONS[product.category as ProductCategory]}
             <span style={{ fontSize: 9, color: '#6b6b7a', letterSpacing: 1, marginLeft: 4 }}>{product.category}</span>
           </div>
-
           {!inStock && (
             <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <span style={{ fontSize: 12, fontWeight: 700, color: '#ef4444', letterSpacing: 2, textTransform: 'uppercase', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', padding: '6px 16px', borderRadius: 20 }}>Out of Stock</span>
@@ -96,15 +116,11 @@ export function ProductCard({ product, onBuy, isMine, onDelete, onEdit }: Props)
         {/* ── Title + Price ─────────────────────── */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
           <div style={{ flex: 1, marginRight: 12 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', lineHeight: 1.3, marginBottom: 5 }}>
-              {product.title}
-            </div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', lineHeight: 1.3, marginBottom: 5 }}>{product.title}</div>
             <StarRating rating={product.rating} count={product.reviewCount} />
           </div>
           <div style={{ textAlign: 'right', flexShrink: 0 }}>
-            <div style={{ fontSize: 22, fontWeight: 900, color: GOLD, lineHeight: 1 }}>
-              {product.price}π
-            </div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: GOLD, lineHeight: 1 }}>{product.price}π</div>
             <div style={{ fontSize: 10, marginTop: 3, color: freeShip ? '#10b981' : '#6b6b7a' }}>
               {freeShip ? '✓ Free shipping' : `+${product.shipping.shippingCost}π shipping`}
             </div>
@@ -134,16 +150,8 @@ export function ProductCard({ product, onBuy, isMine, onDelete, onEdit }: Props)
         {/* ── Warranty + Return ─────────────────── */}
         {(product.warranty || product.returnPolicy) && (
           <div style={{ display: 'flex', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
-            {product.warranty && (
-              <span style={{ fontSize: 10, color: '#7eb8f7', display: 'flex', gap: 4, alignItems: 'center' }}>
-                🛡️ {product.warranty}
-              </span>
-            )}
-            {product.returnPolicy && (
-              <span style={{ fontSize: 10, color: '#b39ddb', display: 'flex', gap: 4, alignItems: 'center' }}>
-                ↩️ {product.returnPolicy}
-              </span>
-            )}
+            {product.warranty && <span style={{ fontSize: 10, color: '#7eb8f7', display: 'flex', gap: 4, alignItems: 'center' }}>🛡️ {product.warranty}</span>}
+            {product.returnPolicy && <span style={{ fontSize: 10, color: '#b39ddb', display: 'flex', gap: 4, alignItems: 'center' }}>↩️ {product.returnPolicy}</span>}
           </div>
         )}
 
@@ -155,32 +163,18 @@ export function ProductCard({ product, onBuy, isMine, onDelete, onEdit }: Props)
         </button>
 
         {showInfo && (
-          <div style={{ background: '#ffffff04', border: '1px solid #ffffff08', borderRadius: 12, padding: '12px', marginBottom: 12 }}>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: product.shipping.shipsTo.length > 0 ? 10 : 0 }}>
-              {product.contact.whatsapp && (
-                <a href={`https://wa.me/${product.contact.whatsapp}`} target="_blank" rel="noreferrer"
-                  onClick={e => e.stopPropagation()}
-                  style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 12px', background: 'rgba(37,211,102,0.1)', border: '1px solid rgba(37,211,102,0.25)', borderRadius: 8, color: '#25d366', fontSize: 11, fontWeight: 600, textDecoration: 'none' }}>
-                  💬 WhatsApp
-                </a>
-              )}
-              {product.contact.telegram && (
-                <a href={`https://t.me/${product.contact.telegram}`} target="_blank" rel="noreferrer"
-                  onClick={e => e.stopPropagation()}
-                  style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 12px', background: 'rgba(0,136,204,0.1)', border: '1px solid rgba(0,136,204,0.25)', borderRadius: 8, color: '#0088cc', fontSize: 11, fontWeight: 600, textDecoration: 'none' }}>
-                  ✈️ Telegram
-                </a>
-              )}
-              {product.contact.email && (
-                <a href={`mailto:${product.contact.email}`}
-                  onClick={e => e.stopPropagation()}
-                  style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 12px', background: '#ffffff08', border: '1px solid #ffffff15', borderRadius: 8, color: '#fff', fontSize: 11, fontWeight: 600, textDecoration: 'none' }}>
-                  📧 Email
-                </a>
-              )}
-            </div>
+          <div style={{ background: '#ffffff04', border: '1px solid #ffffff08', borderRadius: 12, padding: '12px', marginBottom: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {product.contact.whatsapp && (
+              <ContactItem icon="💬" value={product.contact.whatsapp} />
+            )}
+            {product.contact.telegram && (
+              <ContactItem icon="✈️" value={`@${product.contact.telegram}`} />
+            )}
+            {product.contact.email && (
+              <ContactItem icon="📧" value={product.contact.email} />
+            )}
             {product.shipping.shipsTo.length > 0 && (
-              <div style={{ fontSize: 10, color: '#4a4a5a' }}>
+              <div style={{ fontSize: 10, color: '#4a4a5a', marginTop: 4 }}>
                 Ships to: {product.shipping.shipsTo.join(', ')}
               </div>
             )}
@@ -217,4 +211,4 @@ export function ProductCard({ product, onBuy, isMine, onDelete, onEdit }: Props)
       </div>
     </div>
   );
-        }
+                  }
