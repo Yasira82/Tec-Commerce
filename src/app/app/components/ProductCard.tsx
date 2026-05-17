@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Product, CATEGORY_ICONS } from '../types';
+import { Product, ProductCategory, CATEGORY_ICONS } from '../types';
 
 interface Props {
   product:  Product;
@@ -25,7 +25,7 @@ function StarRating({ rating, count }: { rating: number; count: number }) {
   );
 }
 
-function ImagePlaceholder({ category }: { category: string }) {
+function ImagePlaceholder({ category }: { category: ProductCategory }) {
   return (
     <div style={{ height: 180, background: 'linear-gradient(135deg,#0f0f1a,#1a1208)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
       <span style={{ fontSize: 40, filter: 'grayscale(0.3)' }}>{CATEGORY_ICONS[category] ?? '🛒'}</span>
@@ -38,18 +38,17 @@ export function ProductCard({ product, onBuy, isMine, onDelete, onEdit }: Props)
   const [imgIdx,   setImgIdx]   = useState(0);
   const [showInfo, setShowInfo] = useState(false);
 
-  const images    = product.images?.length > 0 ? product.images : [];
-  const inStock   = product.stock > 0;
-  const freeShip  = product.shipping.shippingCost === 0;
+  const images   = product.images?.length > 0 ? product.images : [];
+  const inStock  = product.stock > 0;
+  const freeShip = product.shipping.shippingCost === 0;
   const condColor = product.condition === 'new' ? '#10b981' : '#f59e0b';
 
   return (
     <div style={{
       background: 'linear-gradient(180deg,#0f0f1a 0%,#0a0a12 100%)',
-      border: `1px solid rgba(212,175,55,0.12)`,
+      border: '1px solid rgba(212,175,55,0.12)',
       borderRadius: 20, overflow: 'hidden', marginBottom: 12,
       boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
-      transition: 'border-color 0.2s ease',
     }}>
 
       {/* ── Image ────────────────────────────────── */}
@@ -59,7 +58,6 @@ export function ProductCard({ product, onBuy, isMine, onDelete, onEdit }: Props)
           <img src={images[imgIdx]} alt={product.title}
             style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
 
-          {/* Dots */}
           {images.length > 1 && (
             <div style={{ position: 'absolute', bottom: 10, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 5 }}>
               {images.map((_, i) => (
@@ -69,17 +67,15 @@ export function ProductCard({ product, onBuy, isMine, onDelete, onEdit }: Props)
             </div>
           )}
 
-          {/* Condition badge */}
           <div style={{ position: 'absolute', top: 10, left: 10, background: `${condColor}20`, border: `1px solid ${condColor}40`, borderRadius: 20, padding: '3px 10px', fontSize: 9, fontWeight: 700, color: condColor, letterSpacing: 1.5, textTransform: 'uppercase' }}>
             {product.condition}
           </div>
 
-          {/* Category badge */}
           <div style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', borderRadius: 20, padding: '3px 10px', fontSize: 11 }}>
-            {CATEGORY_ICONS[product.category]} <span style={{ fontSize: 9, color: '#6b6b7a', letterSpacing: 1 }}>{product.category}</span>
+            {CATEGORY_ICONS[product.category as ProductCategory]}
+            <span style={{ fontSize: 9, color: '#6b6b7a', letterSpacing: 1, marginLeft: 4 }}>{product.category}</span>
           </div>
 
-          {/* Out of stock overlay */}
           {!inStock && (
             <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <span style={{ fontSize: 12, fontWeight: 700, color: '#ef4444', letterSpacing: 2, textTransform: 'uppercase', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', padding: '6px 16px', borderRadius: 20 }}>Out of Stock</span>
@@ -87,7 +83,7 @@ export function ProductCard({ product, onBuy, isMine, onDelete, onEdit }: Props)
           )}
         </div>
       ) : (
-        <ImagePlaceholder category={product.category} />
+        <ImagePlaceholder category={product.category as ProductCategory} />
       )}
 
       <div style={{ padding: '14px 16px' }}>
@@ -209,4 +205,4 @@ export function ProductCard({ product, onBuy, isMine, onDelete, onEdit }: Props)
       </div>
     </div>
   );
-}
+                          }
