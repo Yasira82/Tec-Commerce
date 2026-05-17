@@ -9,11 +9,14 @@ import { OrdersTab }                        from './components/OrdersTab';
 import { AddProductForm }                   from './components/AddProductForm';
 import { EditProductModal }                 from './components/EditProductModal';
 import { SellerOrderCard }                  from './components/SellerOrderCard';
+import { CommerceDrawer }                   from './components/CommerceDrawer';
 import { Product, Order, MainTab }          from './types';
 
 const HUB_URL      = process.env.NEXT_PUBLIC_HUB_URL      ?? 'https://hub.tecosystem.app';
 const COMMERCE_URL = process.env.NEXT_PUBLIC_COMMERCE_URL ?? 'https://commerce.tecosystem.app';
 const SSO_URL      = `${HUB_URL}/api/auth/sso?target=${encodeURIComponent(COMMERCE_URL)}`;
+
+type Prefs = { theme: 'dark' | 'light'; currency: 'PI' | 'USD'; hideBalance: boolean; };
 
 const getCsrfToken = (): string => {
   if (typeof document === 'undefined') return '';
@@ -26,16 +29,38 @@ const getTokenFromCookie = (): string | null => {
   return match ? match.split('=')[1] : null;
 };
 
+const loadPrefs = (): Prefs => {
+  try {
+    const saved = localStorage.getItem('tec_commerce_prefs');
+    return saved ? JSON.parse(saved) : { theme: 'dark', currency: 'PI', hideBalance: false };
+  } catch { return { theme: 'dark', currency: 'PI', hideBalance: false }; }
+};
+
 function CommercePageInner() {
   const { user, isAuthenticated, isLoading } = usePiAuth();
 
-  const [products,      setProducts]      = useState<Product[]>([]);
-  const [orders,        setOrders]        = useState<Order[]>([]);
-  const [sellerOrders,  setSellerOrders]  = useState<Order[]>([]);
-  const [activeTab,     setActiveTab]     = useState<MainTab>('products');
-  const [dataLoading,   setDataLoading]   = useState(true);
-  const [editProduct,   setEditProduct]   = useState<Product | null>(null);
-  const [toast,         setToast]         = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+  const [products,     setProducts]     = useState<Product[]>([]);
+  const [orders,       setOrders]       = useState<Order[]>([]);
+  const [sellerOrders, setSellerOrders] = useState<Order[]>([]);
+  const [activeTab,    setActiveTab]    = useState<MainTab>('products');
+  const [dataLoading,  setDataLoading]  = useState(true);
+  const [editProduct,  setEditProduct]  = useState<Product | null>(null);
+  const [drawerOpen,   setDrawerOpen]   = useState(false);
+  const [prefs,        setPrefs]        = useState<Prefs>({ theme: 'dark', currency: 'PI', hideBalance: false });
+  const [toast,        setToast]        = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+
+  // Load prefs from localStorage after hydration
+  useEffect(() => { setPrefs(loadPrefs()); }, []);
+
+  const isDark = prefs.theme === 'dark';
+
+  const handlePrefChange = useCallback((key: keyof Prefs, value: unknown) => {
+    setPrefs(prev => {
+      const next = { ...prev, [key]: value };
+      try { localStorage.setItem('tec_commerce_prefs', JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, []);
 
   const showToast = useCallback((msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type });
@@ -54,9 +79,7 @@ function CommercePageInner() {
 
   const fetchProducts = useCallback(async () => {
     try {
-      const res = await fetch('/api/bff/commerce/products', {
-        credentials: 'include', cache: 'no-store',
-      });
+      const res = await fetch('/api/bff/commerce/products', { credentials: 'include', cache: 'no-store' });
       if (res.status === 401) {
         await refreshToken();
         const retry = await fetch('/api/bff/commerce/products', { credentials: 'include', cache: 'no-store' });
@@ -70,9 +93,7 @@ function CommercePageInner() {
 
   const fetchOrders = useCallback(async () => {
     try {
-      const res = await fetch('/api/bff/commerce/orders', {
-        credentials: 'include', cache: 'no-store',
-      });
+      const res = await fetch('/api/bff/commerce/orders', { credentials: 'include', cache: 'no-store' });
       if (res.status === 401) {
         await refreshToken();
         const retry = await fetch('/api/bff/commerce/orders', { credentials: 'include', cache: 'no-store' });
@@ -85,9 +106,7 @@ function CommercePageInner() {
 
   const fetchSellerOrders = useCallback(async () => {
     try {
-      const res = await fetch('/api/bff/commerce/orders?role=seller', {
-        credentials: 'include', cache: 'no-store',
-      });
+      const res = await fetch('/api/bff/commerce/orders?role=seller', { credentials: 'include', cache: 'no-store' });
       if (res.ok) { const d = await res.json(); setSellerOrders(d?.orders ?? []); }
     } catch { /* silent */ }
   }, []);
@@ -181,7 +200,9 @@ function CommercePageInner() {
 
   return (
     <div style={{
-      minHeight: '100vh', background: '#020205', color: '#fff',
+      minHeight: '100vh',
+      background: isDark ? '#020205' : '#f0f0f5',
+      color:      isDark ? '#fff'    : '#111',
       fontFamily: '-apple-system, BlinkMacSystemFont, system-ui, sans-serif',
       paddingBottom: 90,
     }}>
@@ -195,6 +216,18 @@ function CommercePageInner() {
         input,textarea,select { font-family: inherit; }
         ::-webkit-scrollbar { display: none; }
       `}</style>
+
+      {/* ── Drawer ─────────────────────────────────── */}
+      <CommerceDrawer
+        isOpen={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        prefs={prefs}
+        onPrefChange={handlePrefChange}
+        username={user?.piUsername}
+        hubUrl={HUB_URL}
+        notifCount={0}
+        onNotif={() => { setDrawerOpen(false); setActiveTab('orders'); }}
+      />
 
       {/* ── Edit Modal ─────────────────────────────── */}
       {editProduct && (
@@ -224,24 +257,33 @@ function CommercePageInner() {
 
       {/* ── Header ─────────────────────────────────── */}
       <header style={{
-        padding: '14px 20px', borderBottom: '1px solid #ffffff08',
+        padding: '14px 20px', borderBottom: `1px solid ${isDark ? '#ffffff08' : '#e0e0e8'}`,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         position: 'sticky', top: 0,
-        background: 'rgba(2,2,5,0.95)', backdropFilter: 'blur(20px)', zIndex: 100,
+        background: isDark ? 'rgba(2,2,5,0.95)' : 'rgba(240,240,245,0.95)',
+        backdropFilter: 'blur(20px)', zIndex: 100,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <button className="btn" onClick={() => { window.location.href = `${HUB_URL}/hub`; }}
-            style={{ background: '#ffffff08', border: '1px solid #ffffff10', borderRadius: 12, padding: '6px 10px', color: '#d4af37', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-            <span style={{ fontSize: 16 }}>🔷</span>
-            <span style={{ fontSize: 8, color: '#4a4a5a', letterSpacing: 1 }}>HUB</span>
+          {/* ── Hamburger ── */}
+          <button className="btn" onClick={() => setDrawerOpen(true)}
+            style={{ width: 36, height: 36, borderRadius: 10, background: isDark ? '#ffffff08' : '#e0e0e8', border: `1px solid ${isDark ? '#ffffff10' : '#ccc'}`, color: '#d4af37', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+            <span style={{ width: 16, height: 2, background: '#d4af37', borderRadius: 1, display: 'block' }} />
+            <span style={{ width: 16, height: 2, background: '#d4af37', borderRadius: 1, display: 'block' }} />
+            <span style={{ width: 10, height: 2, background: '#d4af37', borderRadius: 1, display: 'block', alignSelf: 'flex-start', marginLeft: 3 }} />
           </button>
           <div>
             <div style={{ fontSize: 15, fontWeight: 800, color: '#d4af37', lineHeight: 1 }}>Commerce</div>
-            <div style={{ fontSize: 9, color: '#3a3a4a', letterSpacing: 2 }}>TEC ECOSYSTEM</div>
+            <div style={{ fontSize: 9, color: '#4a4a5a', letterSpacing: 2 }}>TEC ECOSYSTEM</div>
           </div>
         </div>
-        <div style={{ fontSize: 12, color: '#d4af37' }}>
-          {user?.piUsername ? `@${user.piUsername}` : ''}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* Hide Balance indicator */}
+          {prefs.hideBalance && (
+            <span style={{ fontSize: 10, color: '#4a4a5a' }}>👁️ Hidden</span>
+          )}
+          <div style={{ fontSize: 12, color: '#d4af37' }}>
+            {user?.piUsername ? `@${user.piUsername}` : ''}
+          </div>
         </div>
       </header>
 
@@ -258,7 +300,9 @@ function CommercePageInner() {
             ].map(s => (
               <div key={s.label} style={{ background: '#ffffff05', borderRadius: 12, padding: '10px 8px', textAlign: 'center' }}>
                 <div style={{ fontSize: 16, marginBottom: 4 }}>{s.icon}</div>
-                <div style={{ fontSize: 16, fontWeight: 900, color: '#d4af37' }}>{s.value}</div>
+                <div style={{ fontSize: 16, fontWeight: 900, color: '#d4af37' }}>
+                  {prefs.hideBalance && s.label !== 'Products' && s.label !== 'My Items' ? '••' : s.value}
+                </div>
                 <div style={{ fontSize: 8, color: '#4a4a5a', letterSpacing: 1 }}>{s.label}</div>
               </div>
             ))}
@@ -275,7 +319,7 @@ function CommercePageInner() {
           { key: 'sell',     label: '+ Sell'       },
         ] as const).map(tab => (
           <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-            style={{ padding: '8px 14px', borderRadius: 20, cursor: 'pointer', fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap', background: activeTab === tab.key ? '#d4af3712' : '#ffffff08', color: activeTab === tab.key ? '#d4af37' : '#4a4a5a', border: activeTab === tab.key ? '1px solid #d4af3730' : '1px solid transparent', transition: 'all 0.2s' }}>
+            style={{ padding: '8px 14px', borderRadius: 20, cursor: 'pointer', fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap', background: activeTab === tab.key ? '#d4af3712' : isDark ? '#ffffff08' : '#e0e0e8', color: activeTab === tab.key ? '#d4af37' : '#4a4a5a', border: activeTab === tab.key ? '1px solid #d4af3730' : '1px solid transparent', transition: 'all 0.2s' }}>
             {tab.label}
           </button>
         ))}
@@ -332,7 +376,7 @@ function CommercePageInner() {
       </div>
 
       {/* ── Bottom Nav ─────────────────────────────── */}
-      <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'rgba(10,10,18,0.97)', backdropFilter: 'blur(20px)', borderTop: '1px solid #ffffff08', display: 'flex', padding: '10px 0 22px' }}>
+      <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: isDark ? 'rgba(10,10,18,0.97)' : 'rgba(240,240,245,0.97)', backdropFilter: 'blur(20px)', borderTop: `1px solid ${isDark ? '#ffffff08' : '#e0e0e8'}`, display: 'flex', padding: '10px 0 22px' }}>
         {([
           { key: 'products', icon: '🛒', label: 'Products' },
           { key: 'orders',   icon: '🧾', label: 'Orders'   },
@@ -364,4 +408,4 @@ function CommercePageInner() {
 
 export default function CommercePage() {
   return <ErrorBoundary><CommercePageInner /></ErrorBoundary>;
-            }
+}
