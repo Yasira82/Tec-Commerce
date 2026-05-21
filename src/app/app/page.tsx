@@ -1,22 +1,24 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { usePiAuth }                        from '@/lib-client/hooks/usePiAuth';
-import { ErrorBoundary }                    from '@/components/ErrorBoundary';
-import { CommerceSkeleton }                 from './components/CommerceSkeleton';
-import { ProductsTab }                      from './components/ProductsTab';
-import { OrdersTab }                        from './components/OrdersTab';
-import { AddProductForm }                   from './components/AddProductForm';
-import { EditProductModal }                 from './components/EditProductModal';
-import { SellerOrderCard }                  from './components/SellerOrderCard';
-import { CommerceDrawer }                   from './components/CommerceDrawer';
-import { Product, Order, MainTab }          from './types';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { usePiAuth }                                from '@/lib-client/hooks/usePiAuth';
+import { ErrorBoundary }                            from '@/components/ErrorBoundary';
+import { CommerceSkeleton }                         from './components/CommerceSkeleton';
+import { ProductsTab }                              from './components/ProductsTab';
+import { OrdersTab }                                from './components/OrdersTab';
+import { AddProductForm }                           from './components/AddProductForm';
+import { EditProductModal }                         from './components/EditProductModal';
+import { SellerOrderCard }                          from './components/SellerOrderCard';
+import { CommerceDrawer }                           from './components/CommerceDrawer';
+import { Product, Order, MainTab }                  from './types';
+import { createPaymentRecord, createU2APayment }    from '@/lib/pi-payment';
 
 const HUB_URL      = process.env.NEXT_PUBLIC_HUB_URL      ?? 'https://hub.tecosystem.app';
 const COMMERCE_URL = process.env.NEXT_PUBLIC_COMMERCE_URL ?? 'https://commerce.tecosystem.app';
 const SSO_URL      = `${HUB_URL}/api/auth/sso?target=${encodeURIComponent(COMMERCE_URL)}`;
 
-type Prefs = { theme: 'dark' | 'light'; currency: 'PI' | 'USD'; hideBalance: boolean; language: 'en' | 'ar'; };
+type Prefs    = { theme: 'dark' | 'light'; currency: 'PI' | 'USD'; hideBalance: boolean; language: 'en' | 'ar'; };
+type PayStatus = 'idle' | 'creating' | 'paying' | 'success' | 'cancelled' | 'error';
 
 const getCsrfToken = (): string => {
   if (typeof document === 'undefined') return '';
@@ -49,7 +51,12 @@ function CommercePageInner() {
   const [prefs,        setPrefs]        = useState<Prefs>({ theme: 'dark', currency: 'PI', hideBalance: false, language: 'en' });
   const [toast,        setToast]        = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
-  // Load prefs from localStorage after hydration
+  // ── Payment state ─────────────────────────────────────────
+  const [payStatus,    setPayStatus]    = useState<PayStatus>('idle');
+  const [payMessage,   setPayMessage]   = useState('');
+  const [activeProd,   setActiveProd]   = useState<Product | null>(null);
+  const inFlight = useRef(false);
+
   useEffect(() => { setPrefs(loadPrefs()); }, []);
 
   const isDark = prefs.theme === 'dark';
@@ -136,16 +143,63 @@ function CommercePageInner() {
     }
   }, [isLoading, isAuthenticated, showToast, fetchOrders]);
 
-  const handleBuy = useCallback((product: Product) => {
+  // ── handleBuy — Direct Pi payment ✅ ──────────────────────
+  const handleBuy = useCallback(async (product: Product) => {
     if (!window.Pi) { showToast('Open in Pi Browser to pay', 'error'); return; }
-    const amount = product.price + (product.shipping.shippingCost ?? 0);
-    window.location.href = `${HUB_URL}/hub?pay=1`
-      + `&amount=${amount}`
-      + `&memo=${encodeURIComponent(`Buy ${product.title} — TEC Commerce`)}`
-      + `&product_id=${product.id}`
-      + `&return_url=${encodeURIComponent(`${COMMERCE_URL}/app`)}`
-      + `&source=commerce`;
-  }, [showToast]);
+    if (inFlight.current) return;
+
+    inFlight.current = true;
+    setActiveProd(product);
+    setPayStatus('creating');
+    setPayMessage('');
+
+    try {
+      const amount     = product.price + (product.shipping?.shippingCost ?? 0);
+      const memo       = `Buy ${product.title} — TEC Commerce`;
+      const internalId = await createPaymentRecord(amount, product.id, memo);
+
+      if (!internalId) {
+        setPayStatus('error');
+        setPayMessage('Failed to initialize payment.');
+        inFlight.current = false;
+        return;
+      }
+
+      setPayStatus('paying');
+
+      const result = await createU2APayment(
+        amount, memo,
+        { source: 'commerce', product_id: product.id },
+        internalId,
+      );
+
+      if (result.success) {
+        fetch('/api/bff/commerce/orders', {
+          method: 'POST', credentials: 'include',
+          headers: { 'Content-Type': 'application/json', 'x-csrf-token': getCsrfToken() },
+          body: JSON.stringify({ product_id: product.id, payment_id: internalId }),
+        }).then(() => fetchOrders()).catch(() => {});
+
+        setPayStatus('success');
+        showToast('Payment successful! 🎉');
+      } else {
+        setPayStatus(result.status === 'cancelled' ? 'cancelled' : 'error');
+        setPayMessage(result.message ?? '');
+      }
+    } catch (err) {
+      setPayStatus('error');
+      setPayMessage(err instanceof Error ? err.message : 'Payment failed');
+    } finally {
+      inFlight.current = false;
+    }
+  }, [showToast, fetchOrders]);
+
+  const closePayModal = () => {
+    setPayStatus('idle');
+    setActiveProd(null);
+    setPayMessage('');
+    inFlight.current = false;
+  };
 
   const handleDelete = useCallback(async (productId: string) => {
     try {
@@ -217,7 +271,7 @@ function CommercePageInner() {
         ::-webkit-scrollbar { display: none; }
       `}</style>
 
-      {/* ── Drawer ─────────────────────────────────── */}
+      {/* ── Drawer ── */}
       <CommerceDrawer
         isOpen={drawerOpen}
         onClose={() => setDrawerOpen(false)}
@@ -229,7 +283,7 @@ function CommercePageInner() {
         onNotif={() => { setDrawerOpen(false); setActiveTab('orders'); }}
       />
 
-      {/* ── Edit Modal ─────────────────────────────── */}
+      {/* ── Edit Modal ── */}
       {editProduct && (
         <EditProductModal
           product={editProduct}
@@ -238,7 +292,7 @@ function CommercePageInner() {
         />
       )}
 
-      {/* ── Toast ──────────────────────────────────── */}
+      {/* ── Toast ── */}
       {toast && (
         <div style={{
           position: 'fixed', top: 70, left: 16, right: 16, zIndex: 999,
@@ -255,7 +309,7 @@ function CommercePageInner() {
         </div>
       )}
 
-      {/* ── Header ─────────────────────────────────── */}
+      {/* ── Header ── */}
       <header style={{
         padding: '14px 20px', borderBottom: `1px solid ${isDark ? '#ffffff08' : '#e0e0e8'}`,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -264,7 +318,6 @@ function CommercePageInner() {
         backdropFilter: 'blur(20px)', zIndex: 100,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* ── Hamburger ── */}
           <button className="btn" onClick={() => setDrawerOpen(true)}
             style={{ width: 36, height: 36, borderRadius: 10, background: isDark ? '#ffffff08' : '#e0e0e8', border: `1px solid ${isDark ? '#ffffff10' : '#ccc'}`, color: '#d4af37', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
             <span style={{ width: 16, height: 2, background: '#d4af37', borderRadius: 1, display: 'block' }} />
@@ -277,17 +330,14 @@ function CommercePageInner() {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* Hide Balance indicator */}
-          {prefs.hideBalance && (
-            <span style={{ fontSize: 10, color: '#4a4a5a' }}>👁️ Hidden</span>
-          )}
+          {prefs.hideBalance && <span style={{ fontSize: 10, color: '#4a4a5a' }}>👁️ Hidden</span>}
           <div style={{ fontSize: 12, color: '#d4af37' }}>
             {user?.piUsername ? `@${user.piUsername}` : ''}
           </div>
         </div>
       </header>
 
-      {/* ── Overview Card ──────────────────────────── */}
+      {/* ── Overview Card ── */}
       <div style={{ padding: '16px 16px 0' }} className="fade-in">
         <div style={{ borderRadius: 24, padding: '20px 24px', background: 'linear-gradient(135deg,#1a1208 0%,#0f0f1a 60%,#0a0f1f 100%)', border: '1px solid #d4af3725' }}>
           <div style={{ fontSize: 10, color: '#6b6b7a', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 12 }}>COMMERCE OVERVIEW</div>
@@ -310,7 +360,7 @@ function CommercePageInner() {
         </div>
       </div>
 
-      {/* ── Tabs ───────────────────────────────────── */}
+      {/* ── Tabs ── */}
       <div style={{ padding: '14px 16px 0', display: 'flex', gap: 6, overflowX: 'auto' }}>
         {([
           { key: 'products', label: '🛒 Products' },
@@ -325,7 +375,7 @@ function CommercePageInner() {
         ))}
       </div>
 
-      {/* ── Content ────────────────────────────────── */}
+      {/* ── Content ── */}
       <div style={{ padding: '12px 16px 0' }} className="fade-in">
         {activeTab === 'products' && (
           <ProductsTab
@@ -375,7 +425,7 @@ function CommercePageInner() {
         )}
       </div>
 
-      {/* ── Bottom Nav ─────────────────────────────── */}
+      {/* ── Bottom Nav ── */}
       <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: isDark ? 'rgba(10,10,18,0.97)' : 'rgba(240,240,245,0.97)', backdropFilter: 'blur(20px)', borderTop: `1px solid ${isDark ? '#ffffff08' : '#e0e0e8'}`, display: 'flex', padding: '10px 0 22px' }}>
         {([
           { key: 'products', icon: '🛒', label: 'Products' },
@@ -402,6 +452,66 @@ function CommercePageInner() {
           </button>
         ))}
       </nav>
+
+      {/* ── Payment Modal ✅ ── */}
+      {payStatus !== 'idle' && activeProd && (
+        <div
+          style={{ position:'fixed', inset:0, zIndex:999, background:'rgba(0,0,0,0.88)', backdropFilter:'blur(16px)', display:'flex', alignItems:'center', justifyContent:'center', padding:24 }}
+          onClick={['success','cancelled','error'].includes(payStatus) ? closePayModal : undefined}
+        >
+          <div
+            style={{ width:'100%', maxWidth:320, borderRadius:28, background:'#0d0d18', border:'1px solid rgba(212,175,55,0.2)', padding:'36px 28px', textAlign:'center', boxShadow:'0 40px 80px rgba(0,0,0,0.6)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ width:56, height:56, borderRadius:18, background:'linear-gradient(135deg,#d4af37,#8b6914)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, margin:'0 auto 14px', color:'#07070f' }}>🛒</div>
+            <p style={{ fontFamily:'system-ui', fontSize:12, color:'#4a4a5a', marginBottom:6, textTransform:'uppercase', letterSpacing:2 }}>{activeProd.title}</p>
+            <div style={{ fontSize:40, fontWeight:900, color:'#d4af37', marginBottom:24, fontFamily:'Georgia,serif' }}>
+              {activeProd.price + (activeProd.shipping?.shippingCost ?? 0)}π
+            </div>
+
+            {(payStatus === 'creating' || payStatus === 'paying') && (
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:12 }}>
+                <div style={{ width:36, height:36, borderRadius:'50%', border:'3px solid rgba(212,175,55,0.15)', borderTopColor:'#d4af37', animation:'spin 0.8s linear infinite' }} />
+                <p style={{ fontFamily:'system-ui', fontSize:13, color:'#4a4a5a' }}>
+                  {payStatus === 'creating' ? 'Preparing payment...' : 'Confirm in Pi Wallet...'}
+                </p>
+              </div>
+            )}
+
+            {payStatus === 'success' && (
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:10 }}>
+                <div style={{ fontSize:44 }}>✅</div>
+                <p style={{ fontFamily:'system-ui', fontSize:16, fontWeight:700, color:'#7ee7c0' }}>Payment Successful!</p>
+                <button onClick={closePayModal}
+                  style={{ padding:'12px 28px', borderRadius:14, border:'none', background:'linear-gradient(135deg,#d4af37,#b8882a)', color:'#07070f', fontSize:13, fontWeight:800, fontFamily:'system-ui', cursor:'pointer' }}>
+                  Done
+                </button>
+              </div>
+            )}
+
+            {(payStatus === 'cancelled' || payStatus === 'error') && (
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:10 }}>
+                <div style={{ fontSize:44 }}>{payStatus === 'cancelled' ? '⚠️' : '❌'}</div>
+                <p style={{ fontFamily:'system-ui', fontSize:14, fontWeight:700, color: payStatus === 'cancelled' ? '#f0c040' : '#e74c3c' }}>
+                  {payStatus === 'cancelled' ? 'Cancelled' : 'Failed'}
+                </p>
+                {payMessage && <p style={{ fontFamily:'system-ui', fontSize:11, color:'#4a4a5a', maxWidth:220 }}>{payMessage}</p>}
+                <div style={{ display:'flex', gap:8, marginTop:6 }}>
+                  <button
+                    onClick={() => { closePayModal(); setTimeout(() => activeProd && handleBuy(activeProd), 100); }}
+                    style={{ padding:'10px 20px', borderRadius:12, border:'none', background:'linear-gradient(135deg,#d4af37,#b8882a)', color:'#07070f', fontSize:12, fontWeight:800, fontFamily:'system-ui', cursor:'pointer' }}>
+                    Try Again
+                  </button>
+                  <button onClick={closePayModal}
+                    style={{ padding:'10px 16px', borderRadius:12, background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', color:'#888', fontSize:12, fontFamily:'system-ui', cursor:'pointer' }}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
