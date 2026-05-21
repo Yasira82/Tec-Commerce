@@ -8,7 +8,6 @@ export const metadata: Metadata = {
   description: 'Buy and sell on the Pi Network marketplace',
 };
 
-// ✅ خارج JSX — بيحل مشكلة ESLint parsing
 const piSandbox = process.env.NEXT_PUBLIC_PI_SANDBOX === 'true';
 const piAppId   = process.env.NEXT_PUBLIC_PI_APP_ID ?? '';
 const piScript  = `(function(){
@@ -22,8 +21,10 @@ const piScript  = `(function(){
       setReady();
     }catch(e){
       var msg=String(e).toLowerCase();
-      if(msg.includes('already')||msg.includes('initialized')){setReady();}
-      else{setTimeout(initPi,150);}
+      if(msg.includes('already')||msg.includes('initialized')){
+        window.__TEC_PI_FOREIGN_SESSION=true;
+        setReady();
+      }else{setTimeout(initPi,150);}
     }
   }
   initPi();
@@ -43,7 +44,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <Script src="https://sdk.minepi.com/pi-sdk.js" strategy="beforeInteractive" />
         <Script id="pi-init" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: piScript }} />
-
         <LocaleProvider>
           <BackendOfflineBanner />
           {children}
