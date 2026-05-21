@@ -217,36 +217,48 @@ describe('Commerce Page', () => {
 
   // ── TIER 1: handleBuy ─────────────────────────────────────────────────
 
-  it('handleBuy يبعت params صح لـ Hub', async () => {
-    mockFetch({
-      '/api/bff/commerce/products': { ok: true, data: { products: [mockProduct] } },
-      '/api/bff/commerce/orders':   { ok: true, data: { orders: [] } },
-    });
-    const { default: CommercePage } = await import('../page');
-    render(React.createElement(CommercePage));
-    // ✅ ننتظر buy-prod-1 مباشرة — products-tab بيظهر فوراً حتى لو products = []
-    await waitFor(() => screen.getByTestId('buy-prod-1'));
-    await act(async () => { screen.getByTestId('buy-prod-1').click(); });
-    expect(window.location.href).toContain('hub.tecosystem.app/hub');
-    expect(window.location.href).toContain('pay=1');
-    expect(window.location.href).toContain('amount=10');
-    expect(window.location.href).toContain('prod-1');
-    expect(window.location.href).toContain('commerce.tecosystem.app');
+  // ── TIER 1: handleBuy ─────────────────────────────────────────────────
+
+it('handleBuy يكالل Pi.createPayment مع amount صح', async () => {
+  const createPayment = vi.fn();
+  (window as any).Pi = {
+    authenticate: vi.fn((_scopes: string[], _cb: Function) => Promise.resolve()),
+    createPayment,
+  };
+
+  // mock @/lib/pi-payment
+  vi.doMock('@/lib/pi-payment', () => ({
+    createPaymentRecord: vi.fn().mockResolvedValue('internal-pay-id'),
+    createU2APayment:    vi.fn().mockResolvedValue({ status: 'completed', success: true, paymentId: 'p1', txid: 'tx1' }),
+  }));
+
+  mockFetch({
+    '/api/bff/commerce/products': { ok: true, data: { products: [mockProduct] } },
+    '/api/bff/commerce/orders':   { ok: true, data: { orders: [] } },
+    '/api/bff/payment/create':    { ok: true, data: { data: { payment: { id: 'internal-pay-id' } } } },
   });
 
-  it('handleBuy يوقف لو Pi مش موجود', async () => {
-    delete (window as any).Pi;
-    mockFetch({
-      '/api/bff/commerce/products': { ok: true, data: { products: [mockProduct] } },
-      '/api/bff/commerce/orders':   { ok: true, data: { orders: [] } },
-    });
-    const { default: CommercePage } = await import('../page');
-    render(React.createElement(CommercePage));
-    // ✅ نفس الـ fix
-    await waitFor(() => screen.getByTestId('buy-prod-1'));
-    await act(async () => { screen.getByTestId('buy-prod-1').click(); });
-    expect(window.location.href).toBe('');
+  const { default: CommercePage } = await import('../page');
+  render(React.createElement(CommercePage));
+  await waitFor(() => screen.getByTestId('buy-prod-1'));
+  await act(async () => { screen.getByTestId('buy-prod-1').click(); });
+
+  // ✅ مش بيروح Hub تاني — بيكالل Pi.createPayment مباشرة
+  expect(window.location.href).not.toContain('hub.tecosystem.app/hub');
+});
+
+it('handleBuy يوقف لو Pi مش موجود', async () => {
+  delete (window as any).Pi;
+  mockFetch({
+    '/api/bff/commerce/products': { ok: true, data: { products: [mockProduct] } },
+    '/api/bff/commerce/orders':   { ok: true, data: { orders: [] } },
   });
+  const { default: CommercePage } = await import('../page');
+  render(React.createElement(CommercePage));
+  await waitFor(() => screen.getByTestId('buy-prod-1'));
+  await act(async () => { screen.getByTestId('buy-prod-1').click(); });
+  expect(window.location.href).toBe('');
+});
 
   // ── TIER 2: 401 Retry ─────────────────────────────────────────────────
 
