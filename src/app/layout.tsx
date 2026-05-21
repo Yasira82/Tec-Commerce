@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import Script            from 'next/script';
+import Script                   from 'next/script';
 import { LocaleProvider }       from '@/lib/i18n';
 import { BackendOfflineBanner } from '@/components/BackendOfflineBanner';
 
@@ -20,46 +20,68 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         `}</style>
       </head>
       <body>
-        {/* ✅ Pi SDK — beforeInteractive بدل sync script */}
-        <Script
-          src="https://sdk.minepi.com/pi-sdk.js"
-          strategy="beforeInteractive"
-        />
+        <Script src="https://sdk.minepi.com/pi-sdk.js" strategy="beforeInteractive" />
+
         <Script
           id="pi-init"
           strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
-              (function() {
-                function initPi() {
-                  if (typeof window.Pi !== 'undefined') {
-                    try {
-                      window.Pi.init({
-                        version: '2.0',
-                        sandbox: ${process.env.NEXT_PUBLIC_PI_SANDBOX === 'true'},
-                        appId:   '${process.env.NEXT_PUBLIC_PI_APP_ID ?? ''}',
-                      });
-                      window.__TEC_PI_READY = true;
-                      window.dispatchEvent(new Event('tec-pi-ready'));
-                    } catch(e) {
-                      var msg = String(e);
-                      if (msg.includes('already') || msg.includes('initialized')) {
-                        window.__TEC_PI_READY = true;
-                        window.dispatchEvent(new Event('tec-pi-ready'));
-                      } else {
-                        window.__TEC_PI_ERROR = true;
-                        window.dispatchEvent(new Event('tec-pi-error'));
-                      }
-                    }
-                  } else {
-                    setTimeout(initPi, 100);
-                  }
-                }
-                initPi();
-              })();
+(function() {
+  var MAX = 40;
+  var tries = 0;
+
+  function setReady() {
+    window.__TEC_PI_READY = true;
+    window.dispatchEvent(new Event('tec-pi-ready'));
+  }
+
+  function initPi() {
+    if (tries++ >= MAX) {
+      window.__TEC_PI_ERROR = true;
+      window.dispatchEvent(new Event('tec-pi-error'));
+      return;
+    }
+
+    if (typeof window.Pi === 'undefined') {
+      setTimeout(initPi, 150);
+      return;
+    }
+
+    try {
+      var r = window.Pi.init({
+        version: '2.0',
+        sandbox: ${process.env.NEXT_PUBLIC_PI_SANDBOX === 'true'},
+        appId:   '${process.env.NEXT_PUBLIC_PI_APP_ID ?? ''}',
+      });
+      // ✅ لو Pi.init بترجع Promise (بعض versions)
+      if (r && typeof r.then === 'function') {
+        r.then(setReady).catch(function() { setTimeout(initPi, 300); });
+      } else {
+        setReady();
+      }
+    } catch(e) {
+      var msg = String(e).toLowerCase();
+      if (msg.includes('already') || msg.includes('initialized')) {
+        // ✅ verify حقيقي — "already initialized" ممكن تكون لـ Hub مش Commerce
+        window.Pi.authenticate(['username'], function() {})
+          .then(setReady)
+          .catch(function() {
+            // Pi مش initialized لـ Commerce — retry
+            setTimeout(initPi, 500);
+          });
+      } else {
+        setTimeout(initPi, 150);
+      }
+    }
+  }
+
+  initPi();
+})();
             `,
           }}
         />
+
         <LocaleProvider>
           <BackendOfflineBanner />
           {children}
