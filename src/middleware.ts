@@ -5,8 +5,12 @@ const CSRF_SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 const CSRF_PROTECTED    = [
   '/api/auth/logout',
   '/api/auth/refresh',
-  '/api/bff/',
+  '/api/bff/commerce/',
+  '/api/bff/marketplace/',
 ];
+
+// ✅ Payment routes مستثناة — JWT + Idempotency-Key بيحموها
+const CSRF_EXCLUDED = ['/api/bff/payment/'];
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -23,7 +27,9 @@ export function middleware(req: NextRequest) {
   }
 
   if (!CSRF_SAFE_METHODS.has(method)) {
-    const isCsrfProtected = CSRF_PROTECTED.some(r => pathname.startsWith(r));
+    const isExcluded    = CSRF_EXCLUDED.some(r => pathname.startsWith(r));
+    const isCsrfProtected = !isExcluded && CSRF_PROTECTED.some(r => pathname.startsWith(r));
+
     if (isCsrfProtected) {
       const csrfCookie = req.cookies.get('tec_csrf')?.value;
       const csrfHeader = req.headers.get('x-csrf-token');
