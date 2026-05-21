@@ -17,7 +17,7 @@ const HUB_URL      = process.env.NEXT_PUBLIC_HUB_URL      ?? 'https://hub.tecosy
 const COMMERCE_URL = process.env.NEXT_PUBLIC_COMMERCE_URL ?? 'https://commerce.tecosystem.app';
 const SSO_URL      = `${HUB_URL}/api/auth/sso?target=${encodeURIComponent(COMMERCE_URL)}`;
 
-type Prefs    = { theme: 'dark' | 'light'; currency: 'PI' | 'USD'; hideBalance: boolean; language: 'en' | 'ar'; };
+type Prefs     = { theme: 'dark' | 'light'; currency: 'PI' | 'USD'; hideBalance: boolean; language: 'en' | 'ar'; };
 type PayStatus = 'idle' | 'creating' | 'paying' | 'success' | 'cancelled' | 'error';
 
 const getCsrfToken = (): string => {
@@ -51,13 +51,23 @@ function CommercePageInner() {
   const [prefs,        setPrefs]        = useState<Prefs>({ theme: 'dark', currency: 'PI', hideBalance: false, language: 'en' });
   const [toast,        setToast]        = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
-  // ── Payment state ─────────────────────────────────────────
-  const [payStatus,    setPayStatus]    = useState<PayStatus>('idle');
-  const [payMessage,   setPayMessage]   = useState('');
-  const [activeProd,   setActiveProd]   = useState<Product | null>(null);
+  // ── Payment state ──────────────────────────────────────────
+  const [piReady,    setPiReady]    = useState(false); // ✅
+  const [payStatus,  setPayStatus]  = useState<PayStatus>('idle');
+  const [payMessage, setPayMessage] = useState('');
+  const [activeProd, setActiveProd] = useState<Product | null>(null);
   const inFlight = useRef(false);
 
   useEffect(() => { setPrefs(loadPrefs()); }, []);
+
+  // ── Pi SDK ready ✅ ────────────────────────────────────────
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if ((window as any).__TEC_PI_READY) { setPiReady(true); return; }
+    const h = () => setPiReady(true);
+    window.addEventListener('tec-pi-ready', h, { once: true });
+    return () => window.removeEventListener('tec-pi-ready', h);
+  }, []);
 
   const isDark = prefs.theme === 'dark';
 
@@ -143,9 +153,10 @@ function CommercePageInner() {
     }
   }, [isLoading, isAuthenticated, showToast, fetchOrders]);
 
-  // ── handleBuy — Direct Pi payment ✅ ──────────────────────
+  // ── handleBuy ✅ ───────────────────────────────────────────
   const handleBuy = useCallback(async (product: Product) => {
-    if (!window.Pi) { showToast('Open in Pi Browser to pay', 'error'); return; }
+    if (!window.Pi)       { showToast('Open in Pi Browser to pay', 'error'); return; }
+    if (!piReady)         { showToast('Pi SDK still loading...', 'error'); return; } // ✅
     if (inFlight.current) return;
 
     inFlight.current = true;
@@ -192,7 +203,7 @@ function CommercePageInner() {
     } finally {
       inFlight.current = false;
     }
-  }, [showToast, fetchOrders]);
+  }, [showToast, fetchOrders, piReady]); // ✅ piReady في الـ deps
 
   const closePayModal = () => {
     setPayStatus('idle');
@@ -271,7 +282,6 @@ function CommercePageInner() {
         ::-webkit-scrollbar { display: none; }
       `}</style>
 
-      {/* ── Drawer ── */}
       <CommerceDrawer
         isOpen={drawerOpen}
         onClose={() => setDrawerOpen(false)}
@@ -283,7 +293,6 @@ function CommercePageInner() {
         onNotif={() => { setDrawerOpen(false); setActiveTab('orders'); }}
       />
 
-      {/* ── Edit Modal ── */}
       {editProduct && (
         <EditProductModal
           product={editProduct}
@@ -292,7 +301,6 @@ function CommercePageInner() {
         />
       )}
 
-      {/* ── Toast ── */}
       {toast && (
         <div style={{
           position: 'fixed', top: 70, left: 16, right: 16, zIndex: 999,
@@ -309,7 +317,6 @@ function CommercePageInner() {
         </div>
       )}
 
-      {/* ── Header ── */}
       <header style={{
         padding: '14px 20px', borderBottom: `1px solid ${isDark ? '#ffffff08' : '#e0e0e8'}`,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -330,6 +337,8 @@ function CommercePageInner() {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* ✅ Pi ready indicator */}
+          {!piReady && <span style={{ fontSize: 9, color: '#4a4a5a' }}>Pi connecting...</span>}
           {prefs.hideBalance && <span style={{ fontSize: 10, color: '#4a4a5a' }}>👁️ Hidden</span>}
           <div style={{ fontSize: 12, color: '#d4af37' }}>
             {user?.piUsername ? `@${user.piUsername}` : ''}
@@ -337,7 +346,6 @@ function CommercePageInner() {
         </div>
       </header>
 
-      {/* ── Overview Card ── */}
       <div style={{ padding: '16px 16px 0' }} className="fade-in">
         <div style={{ borderRadius: 24, padding: '20px 24px', background: 'linear-gradient(135deg,#1a1208 0%,#0f0f1a 60%,#0a0f1f 100%)', border: '1px solid #d4af3725' }}>
           <div style={{ fontSize: 10, color: '#6b6b7a', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 12 }}>COMMERCE OVERVIEW</div>
@@ -360,7 +368,6 @@ function CommercePageInner() {
         </div>
       </div>
 
-      {/* ── Tabs ── */}
       <div style={{ padding: '14px 16px 0', display: 'flex', gap: 6, overflowX: 'auto' }}>
         {([
           { key: 'products', label: '🛒 Products' },
@@ -375,7 +382,6 @@ function CommercePageInner() {
         ))}
       </div>
 
-      {/* ── Content ── */}
       <div style={{ padding: '12px 16px 0' }} className="fade-in">
         {activeTab === 'products' && (
           <ProductsTab
@@ -425,7 +431,6 @@ function CommercePageInner() {
         )}
       </div>
 
-      {/* ── Bottom Nav ── */}
       <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: isDark ? 'rgba(10,10,18,0.97)' : 'rgba(240,240,245,0.97)', backdropFilter: 'blur(20px)', borderTop: `1px solid ${isDark ? '#ffffff08' : '#e0e0e8'}`, display: 'flex', padding: '10px 0 22px' }}>
         {([
           { key: 'products', icon: '🛒', label: 'Products' },
