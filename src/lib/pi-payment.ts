@@ -67,24 +67,29 @@ export const createU2APayment = async (
     };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    // ✅ await Pi.authenticate قبل createPayment
-    try {
-      await window.Pi.authenticate(
-        ['username', 'payments'],
-        async (incomplete: unknown) => {
-          const pid = (incomplete as { identifier?: string } | null)?.identifier;
-          if (!pid) return;
-          try {
-            await fetch('/api/bff/payment/resolve-incomplete', {
-              method: 'POST', credentials: 'include',
-              headers, body: JSON.stringify({ pi_payment_id: pid }),
-            });
-          } catch {}
-        },
-      );
-    } catch {
-      // authenticate فشل — نكمل على أي حال
-    }
+    // ✅ لو authenticate فشل — وقف وظهّر السبب
+try {
+  await window.Pi.authenticate(
+    ['username', 'payments'],
+    async (incomplete: unknown) => {
+      const pid = (incomplete as { identifier?: string } | null)?.identifier;
+      if (!pid) return;
+      try {
+        await fetch('/api/bff/payment/resolve-incomplete', {
+          method: 'POST', credentials: 'include',
+          headers, body: JSON.stringify({ pi_payment_id: pid }),
+        });
+      } catch {}
+    },
+  );
+} catch (authErr) {
+  done({
+    status:  'error',
+    success: false,
+    message: 'Pi auth failed: ' + (authErr instanceof Error ? authErr.message : String(authErr)),
+  });
+  return;
+}
 
     // ✅ try-catch حوالين Pi.createPayment يكشف الـ error الصامت
     try {
