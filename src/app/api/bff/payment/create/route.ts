@@ -1,41 +1,46 @@
-import { createHandler, GATEWAY_URL } from '@/lib/bff/createHandler';
-import { z }                          from 'zod';
+import { NextRequest, NextResponse } from 'next/server';
 
-const Schema = z.object({
-  amount:     z.number().positive(),
-  product_id: z.string(),
-  memo:       z.string().optional(),
-  source:     z.string().default('commerce'),
-});
+const GW = process.env.API_GATEWAY_URL
+        ?? process.env.NEXT_PUBLIC_API_GATEWAY_URL
+        ?? 'https://api-gateway-production-6a68.up.railway.app';
 
-export const POST = createHandler({
-  requireAuth: true,
-  schema:      Schema,
-  handler: async ({ input, ctx, req }) => {
-    const res = await fetch(`${GATEWAY_URL}/api/payment/create`, {
-      method:  'POST',
-      headers: {
-        'Content-Type':    'application/json',
-        Authorization:     `Bearer ${req.cookies.get('tec_access_token')?.value ?? ''}`,
-        'x-request-id':    ctx.requestId,
-        'x-internal-key':  process.env.INTERNAL_SECRET ?? '',
-        'Idempotency-Key': crypto.randomUUID(),
+const getUserId = (req: NextRequest): string => {
+  try {
+    const raw = req.cookies.get('tec_user')?.value ?? '';
+    const u   = JSON.parse(decodeURIComponent(raw));
+    return u?.id ?? u?.sub ?? '';
+  } catch { return ''; }
+};
+
+export async function POST(req: NextRequest) {
+  const token = req.cookies.get('tec_access_token')?.value;
+  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const userId = getUserId(req);
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const body = await req.json().catch(() => ({}));
+
+  const res = await fetch(`${GW}/api/payment/create`, {
+    method:  'POST',
+    headers: {
+      'Content-Type':    'application/json',
+      Authorization:     `Bearer ${token}`,
+      'Idempotency-Key': crypto.randomUUID(),
+    },
+    body: JSON.stringify({
+      userId,
+      amount:         body.amount,
+      currency:       'PI',
+      payment_method: 'pi',
+      metadata: {
+        source:     'commerce',
+        product_id: body.product_id,
+        memo:       body.memo,
       },
-      body: JSON.stringify({
-        userId:         ctx.userId,
-        amount:         input.amount,
-        currency:       'PI',
-        payment_method: 'pi',
-        metadata: {
-          source:     'commerce',
-          product_id: input.product_id,
-          memo:       input.memo,
-        },
-      }),
-    });
+    }),
+  });
 
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error((data as any)?.error?.message ?? 'Failed');
-    return { payment: (data as any)?.data?.payment ?? data };
-  },
-});
+  const data = await res.json().catch(() => ({}));
+  return NextResponse.json(data, { status: res.status });
+}
