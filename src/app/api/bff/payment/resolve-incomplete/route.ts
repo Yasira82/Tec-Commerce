@@ -1,28 +1,29 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { createHandler, GATEWAY_URL } from '@/lib/bff/createHandler';
+import { z }                          from 'zod';
 
-const GW = process.env.NEXT_PUBLIC_API_GATEWAY_URL
-        ?? 'https://api-gateway-production-6a68.up.railway.app';
+const Schema = z.object({
+  pi_payment_id: z.string(),
+});
 
-export async function POST(req: NextRequest) {
-  const token = req.cookies.get('tec_access_token')?.value;
-  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  const body          = await req.json().catch(() => ({}));
-  const pi_payment_id = body?.pi_payment_id as string | undefined;
-  if (!pi_payment_id) return NextResponse.json({ error: 'pi_payment_id required' }, { status: 400 });
-
-  const res = await fetch(
-    `${GW}/api/payment/resolve-incomplete?pi_payment_id=${encodeURIComponent(pi_payment_id)}`,
-    {
-      method:  'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization:  `Bearer ${token}`,
+export const POST = createHandler({
+  requireAuth: true,
+  schema:      Schema,
+  handler: async ({ input, ctx, req }) => {
+    const res = await fetch(
+      `${GATEWAY_URL}/api/payment/resolve-incomplete?pi_payment_id=${encodeURIComponent(input.pi_payment_id)}`,
+      {
+        method:  'POST',
+        headers: {
+          'Content-Type':   'application/json',
+          Authorization:    `Bearer ${req.cookies.get('tec_access_token')?.value ?? ''}`,
+          'x-request-id':   ctx.requestId,
+          'x-internal-key': process.env.INTERNAL_SECRET ?? '',
+        },
+        body: JSON.stringify({ pi_payment_id: input.pi_payment_id }),
       },
-      body: JSON.stringify({ pi_payment_id }),
-    },
-  );
+    );
 
-  const data = await res.json().catch(() => ({}));
-  return NextResponse.json(data, { status: res.status });
-}
+    const data = await res.json().catch(() => ({}));
+    return data;
+  },
+});
