@@ -41,7 +41,7 @@ export const createU2APayment = async (
   metadata: Record<string, unknown>,
   internalId: string,
 ): Promise<PaymentResult> => {
-  return new Promise((resolve) => {
+  return new Promise(async (resolve) => {
     if (!window.Pi) { resolve({ status: 'error', success: false, message: 'Pi SDK not ready' }); return; }
 
     const token = getToken();
@@ -51,19 +51,27 @@ export const createU2APayment = async (
     };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    // Handle incomplete payments first
-    window.Pi.authenticate(['username', 'payments'], async (incomplete: unknown) => {
-      const p   = incomplete as { identifier?: string } | null;
-      const pid = p?.identifier;
-      if (!pid) return;
-      try {
-        await fetch('/api/bff/payment/resolve-incomplete', {
-          method: 'POST', credentials: 'include',
-          headers, body: JSON.stringify({ pi_payment_id: pid }),
-        });
-      } catch {}
-    });
+    // ✅ await Pi.authenticate قبل createPayment
+    try {
+      await window.Pi.authenticate(
+        ['username', 'payments'],
+        async (incomplete: unknown) => {
+          const p   = incomplete as { identifier?: string } | null;
+          const pid = p?.identifier;
+          if (!pid) return;
+          try {
+            await fetch('/api/bff/payment/resolve-incomplete', {
+              method: 'POST', credentials: 'include',
+              headers, body: JSON.stringify({ pi_payment_id: pid }),
+            });
+          } catch {}
+        },
+      );
+    } catch {
+      // authenticate failed → لا نوقف العملية
+    }
 
+    // ✅ createPayment بعد ما authenticate خلص
     window.Pi.createPayment(
       { amount, memo, metadata: { ...metadata, internalId } },
       {
@@ -90,7 +98,7 @@ export const createU2APayment = async (
             if (res.ok) {
               resolve({ status: 'completed', success: true, paymentId: internalId, txid });
             } else {
-              resolve({ status: 'error', success: false, message: data?.error?.message ?? 'Complete failed' });
+              resolve({ status: 'error', success: false, message: (data as any)?.error?.message ?? 'Complete failed' });
             }
           } catch (err) {
             resolve({ status: 'error', success: false, message: String(err) });
