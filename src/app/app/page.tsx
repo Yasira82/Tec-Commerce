@@ -20,16 +20,13 @@ const SSO_URL      = `${HUB_URL}/api/auth/sso?target=${encodeURIComponent(COMMER
 type Prefs     = { theme: 'dark' | 'light'; currency: 'PI' | 'USD'; hideBalance: boolean; language: 'en' | 'ar'; };
 type PayStatus = 'idle' | 'creating' | 'paying' | 'success' | 'cancelled' | 'error';
 
-const getCsrfToken = (): string => {
-  if (typeof document === 'undefined') return '';
-  return document.cookie.split('; ').find(r => r.startsWith('tec_csrf='))?.split('=')?.[1] ?? '';
-};
+const getCsrfToken = (): string =>
+  typeof document === 'undefined' ? '' :
+  document.cookie.split('; ').find(r => r.startsWith('tec_csrf='))?.split('=')?.[1] ?? '';
 
-const getTokenFromCookie = (): string | null => {
-  if (typeof document === 'undefined') return null;
-  const match = document.cookie.split('; ').find(r => r.startsWith('tec_access_token='));
-  return match ? match.split('=')[1] : null;
-};
+const getTokenFromCookie = (): string | null =>
+  typeof document === 'undefined' ? null :
+  document.cookie.split('; ').find(r => r.startsWith('tec_access_token='))?.split('=')?.[1] ?? null;
 
 const loadPrefs = (): Prefs => {
   try {
@@ -51,8 +48,7 @@ function CommercePageInner() {
   const [prefs,        setPrefs]        = useState<Prefs>({ theme: 'dark', currency: 'PI', hideBalance: false, language: 'en' });
   const [toast,        setToast]        = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
-  // ── Payment state ──────────────────────────────────────────
-  const [piReady,    setPiReady]    = useState(false); // ✅
+  const [piReady,    setPiReady]    = useState(false);
   const [payStatus,  setPayStatus]  = useState<PayStatus>('idle');
   const [payMessage, setPayMessage] = useState('');
   const [activeProd, setActiveProd] = useState<Product | null>(null);
@@ -68,6 +64,12 @@ function CommercePageInner() {
     window.addEventListener('tec-pi-ready', h, { once: true });
     return () => window.removeEventListener('tec-pi-ready', h);
   }, []);
+
+  // ── Re-authenticate Pi for Commerce session ✅ ─────────────
+  useEffect(() => {
+    if (!piReady || (window as any).__TEC_PI_FOREIGN_SESSION) return;
+    window.Pi?.authenticate(['username'], () => {}).catch(() => {});
+  }, [piReady]);
 
   const isDark = prefs.theme === 'dark';
 
@@ -156,9 +158,27 @@ function CommercePageInner() {
   // ── handleBuy ✅ ───────────────────────────────────────────
   const handleBuy = useCallback(async (product: Product) => {
     if (!window.Pi)       { showToast('Open in Pi Browser to pay', 'error'); return; }
-    if (!piReady)         { showToast('Pi SDK still loading...', 'error'); return; } // ✅
+    if (!piReady)         { showToast('Pi SDK still loading...', 'error'); return; }
     if (inFlight.current) return;
 
+    const isForeignSession = !!(window as any).__TEC_PI_FOREIGN_SESSION;
+
+    // ✅ Hub Session → Hub PaymentModal
+    if (isForeignSession) {
+      const amount = product.price + (product.shipping?.shippingCost ?? 0);
+      const params = new URLSearchParams({
+        pay:        '1',
+        amount:     String(amount),
+        memo:       `Buy ${product.title} — TEC Commerce`,
+        product_id: product.id,
+        source:     'commerce',
+        return_url: `${COMMERCE_URL}/app`,
+      });
+      window.location.href = `${HUB_URL}/hub?${params}`;
+      return;
+    }
+
+    // ✅ Commerce Session → Direct Pi Payment
     inFlight.current = true;
     setActiveProd(product);
     setPayStatus('creating');
@@ -190,7 +210,6 @@ function CommercePageInner() {
           headers: { 'Content-Type': 'application/json', 'x-csrf-token': getCsrfToken() },
           body: JSON.stringify({ product_id: product.id, payment_id: internalId }),
         }).then(() => fetchOrders()).catch(() => {});
-
         setPayStatus('success');
         showToast('Payment successful! 🎉');
       } else {
@@ -203,7 +222,7 @@ function CommercePageInner() {
     } finally {
       inFlight.current = false;
     }
-  }, [showToast, fetchOrders, piReady]); // ✅ piReady في الـ deps
+  }, [showToast, fetchOrders, piReady]);
 
   const closePayModal = () => {
     setPayStatus('idle');
@@ -337,7 +356,6 @@ function CommercePageInner() {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* ✅ Pi ready indicator */}
           {!piReady && <span style={{ fontSize: 9, color: '#4a4a5a' }}>Pi connecting...</span>}
           {prefs.hideBalance && <span style={{ fontSize: 10, color: '#4a4a5a' }}>👁️ Hidden</span>}
           <div style={{ fontSize: 12, color: '#d4af37' }}>
@@ -458,7 +476,7 @@ function CommercePageInner() {
         ))}
       </nav>
 
-      {/* ── Payment Modal ✅ ── */}
+      {/* ── Payment Modal (Commerce Direct only) ── */}
       {payStatus !== 'idle' && activeProd && (
         <div
           style={{ position:'fixed', inset:0, zIndex:999, background:'rgba(0,0,0,0.88)', backdropFilter:'blur(16px)', display:'flex', alignItems:'center', justifyContent:'center', padding:24 }}
@@ -523,4 +541,4 @@ function CommercePageInner() {
 
 export default function CommercePage() {
   return <ErrorBoundary><CommercePageInner /></ErrorBoundary>;
-}
+      }
