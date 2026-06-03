@@ -1,20 +1,18 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import {
-  isPiBrowser,
-  loginWithPi,
-  getStoredUser,
-  getAccessToken,
-} from '@/lib-client/pi/pi-auth';
-import { createU2APayment }    from '@/lib-client/pi/pi-payment';
-import { createPaymentRecord } from '@/lib-client/pi/pi-payment';
+import { isPiBrowser, loginWithPi, getStoredUser, getAccessToken } from '@/lib-client/pi/pi-auth';
+import { createU2APayment } from '@/lib-client/pi/pi-payment';
 
 type LogEntry = { ts: string; type: 'info' | 'success' | 'error' | 'warn'; msg: string };
 
 function timestamp() {
   return new Date().toISOString().replace('T', ' ').slice(0, 23);
 }
+
+const getCsrf = (): string =>
+  typeof document === 'undefined' ? '' :
+  document.cookie.split('; ').find(r => r.startsWith('tec_csrf='))?.split('=')?.[1] ?? '';
 
 const SERVICES = [
   { name: 'Gateway',      url: 'https://api-gateway-production-6a68.up.railway.app/health'          },
@@ -46,19 +44,18 @@ export function PiTestClient() {
     setLogs(prev => [...prev, { ts: timestamp(), type, msg }]);
   }, []);
 
-  // ── Pi SDK readiness ──────────────────────────────────────
+  // ── Pi SDK ────────────────────────────────────────────────
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (window.__TEC_PI_READY) { setSdkReady(true);  log('success', 'Pi SDK already initialised'); return; }
-    if (window.__TEC_PI_ERROR) { setSdkReady(false); log('error',   'Pi SDK failed to initialise'); return; }
+    if (window.__TEC_PI_READY) { setSdkReady(true); log('success', 'Pi SDK already initialised'); return; }
+    if (window.__TEC_PI_ERROR) { setSdkReady(false); log('error', 'Pi SDK failed to initialise'); return; }
 
     let resolved = false;
-    const onReady = () => { resolved = true; setSdkReady(true);  log('success', 'Pi SDK initialised'); };
-    const onError = () => { resolved = true; setSdkReady(false); log('error',   'Pi SDK init error'); };
+    const onReady = () => { resolved = true; setSdkReady(true); log('success', 'Pi SDK initialised'); };
+    const onError = () => { resolved = true; setSdkReady(false); log('error', 'Pi SDK init error'); };
 
     window.addEventListener('tec-pi-ready', onReady, { once: true });
     window.addEventListener('tec-pi-error', onError, { once: true });
-
     const timer = setTimeout(() => {
       if (!resolved) { setSdkReady(false); log('warn', 'Pi SDK not ready after 5s'); }
     }, 5000);
@@ -85,72 +82,24 @@ export function PiTestClient() {
     setCheckingAll(true);
     setServices(SERVICES.map(s => ({ name: s.name, status: 'checking' })));
     log('info', 'Checking all 12 services...');
-
     await Promise.all(SERVICES.map(async (s, i) => {
       const start = Date.now();
       try {
         const res = await fetch(s.url, { cache: 'no-store', signal: AbortSignal.timeout(8000) });
         const ms  = Date.now() - start;
-        setServices(prev => {
-          const next = [...prev];
-          next[i] = { name: s.name, status: res.ok ? 'ok' : 'error', ms };
-          return next;
-        });
+        setServices(prev => { const n = [...prev]; n[i] = { name: s.name, status: res.ok ? 'ok' : 'error', ms }; return n; });
         log(res.ok ? 'success' : 'error', `${s.name}: ${res.ok ? '✅' : '❌'} ${res.status} (${ms}ms)`);
       } catch (err) {
         const ms = Date.now() - start;
-        setServices(prev => {
-          const next = [...prev];
-          next[i] = { name: s.name, status: 'error', ms };
-          return next;
-        });
+        setServices(prev => { const n = [...prev]; n[i] = { name: s.name, status: 'error', ms }; return n; });
         log('error', `${s.name}: ❌ ${String(err).slice(0, 50)} (${ms}ms)`);
       }
     }));
-
     setCheckingAll(false);
     log('info', 'Services check complete.');
   }, [log]);
 
-  // ── Debug helpers ─────────────────────────────────────────
-  const handleCheckAuthService = useCallback(async () => {
-    log('info', 'Testing auth service via BFF...');
-    try {
-      const start = Date.now();
-      const res   = await fetch('/api/health', { cache: 'no-store' });
-      const data  = await res.json();
-      log(res.ok ? 'success' : 'error', `BFF Health: ${JSON.stringify(data)} (${Date.now() - start}ms)`);
-    } catch (err) { log('error', `BFF Health failed: ${String(err)}`); }
-  }, [log]);
-
-  const handleCheckSSO = useCallback(async () => {
-    log('info', 'Testing SSO endpoint...');
-    try {
-      const res = await fetch('/api/auth/sso?target=https://assets.tecosystem.app', {
-        credentials: 'include', redirect: 'manual',
-      });
-      log(
-        res.status === 302 || res.status === 307 ? 'success' : 'warn',
-        `SSO response: ${res.status} ${res.statusText}`,
-      );
-    } catch (err) { log('error', `SSO test failed: ${String(err)}`); }
-  }, [log]);
-
-  const handleAuth = useCallback(async () => {
-    log('info', 'Starting Pi authentication…');
-    setAuthStatus('loading');
-    try {
-      if (!isPiBrowser()) throw new Error('Not inside Pi Browser');
-      const result = await loginWithPi();
-      setUsername(result.user.piUsername);
-      setAuthStatus('done');
-      log('success', `Authenticated as @${result.user.piUsername} (uid: ${result.user.piId})`);
-    } catch (err) {
-      setAuthStatus('error');
-      log('error', `Auth error: ${err instanceof Error ? err.message : String(err)}`);
-    }
-  }, [log]);
-
+  // ── Debug Tools ───────────────────────────────────────────
   const handleShowCookies = useCallback(() => {
     const cookies = document.cookie.split('; ').reduce((acc, c) => {
       const [k, ...rest] = c.split('=');
@@ -174,10 +123,69 @@ export function PiTestClient() {
       const res  = await fetch('/api/health', { cache: 'no-store' });
       const data = await res.json();
       log(res.ok ? 'success' : 'error', `🏥 Health: ${JSON.stringify(data)}`);
-    } catch (err) { log('error', `Health check failed: ${String(err)}`); }
+    } catch (err) { log('error', `Health failed: ${String(err)}`); }
   }, [log]);
 
-  // ── Pending Payments — Check & Resolve ───────────────────
+  const handleCheckAuthService = useCallback(async () => {
+    log('info', 'Testing auth service via BFF...');
+    try {
+      const start = Date.now();
+      const res   = await fetch('/api/health', { cache: 'no-store' });
+      const data  = await res.json();
+      const ms    = Date.now() - start;
+      log(res.ok ? 'success' : 'error', `BFF Health: ${JSON.stringify(data)} (${ms}ms)`);
+    } catch (err) { log('error', `BFF Health failed: ${String(err)}`); }
+  }, [log]);
+
+  const handleCheckSSO = useCallback(async () => {
+    log('info', 'Testing SSO endpoint...');
+    try {
+      const res = await fetch('/api/auth/sso?target=https://ecommerce.tecosystem.app', {
+        credentials: 'include', redirect: 'manual',
+      });
+      log(res.status === 302 || res.status === 307 ? 'success' : 'warn',
+        `SSO response: ${res.status} ${res.statusText}`);
+    } catch (err) { log('error', `SSO test failed: ${String(err)}`); }
+  }, [log]);
+
+  // ── Auth ──────────────────────────────────────────────────
+  const handleAuth = useCallback(async () => {
+    log('info', 'Starting Pi authentication…');
+    setAuthStatus('loading');
+    try {
+      if (!isPiBrowser()) throw new Error('Not inside Pi Browser');
+      const result = await loginWithPi();
+      setUsername(result.user.piUsername);
+      setAuthStatus('done');
+      log('success', `Authenticated as @${result.user.piUsername} (uid: ${result.user.piId})`);
+    } catch (err) {
+      setAuthStatus('error');
+      log('error', `Auth error: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }, [log]);
+
+  // ── Resolve helper ────────────────────────────────────────
+  const resolvePayment = useCallback(async (pid: string) => {
+    const token = getAccessToken();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token)     headers['Authorization'] = `Bearer ${token}`;
+    if (getCsrf()) headers['x-csrf-token']  = getCsrf();
+
+    try {
+      const res  = await fetch(`/api/payment/resolve-incomplete?pi_payment_id=${encodeURIComponent(pid)}`, {
+        method: 'POST', credentials: 'include', headers,
+        body: JSON.stringify({ pi_payment_id: pid }),
+      });
+      const data = await res.json().catch(() => ({}));
+      log(res.ok ? 'success' : 'error', `Resolve: ${JSON.stringify(data)} (${res.status})`);
+      return res.ok;
+    } catch (e) {
+      log('error', `Network: ${String(e)}`);
+      return false;
+    }
+  }, [log]);
+
+  // ── Pending Payments ──────────────────────────────────────
   const handleCancelPending = useCallback(async () => {
     log('info', 'Checking for pending payments...');
     try {
@@ -187,104 +195,50 @@ export function PiTestClient() {
         const pid = p?.identifier as string | undefined;
         if (!pid) { log('info', 'No pending payment ✅'); return; }
         log('warn', `Pending: ${pid} | amount: ${p?.amount}`);
-        const token     = getAccessToken();
-        const csrfToken = document.cookie
-          .split('; ').find(r => r.startsWith('tec_csrf='))?.split('=')?.[1];
-        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-        if (token)     headers['Authorization'] = `Bearer ${token}`;
-        if (csrfToken) headers['x-csrf-token']  = csrfToken;
-        try {
-          const res  = await fetch('/api/bff/payment/resolve-incomplete', {
-            method: 'POST', credentials: 'include', headers,
-            body: JSON.stringify({ pi_payment_id: pid }),
-          });
-          const data = await res.json().catch(() => ({}));
-          log(res.ok ? 'success' : 'error', `Resolve: ${JSON.stringify(data)} (${res.status})`);
-        } catch (e) { log('error', `Network: ${String(e)}`); }
+        await resolvePayment(pid);
       });
     } catch (err) { log('error', `Failed: ${String(err)}`); }
-  }, [log]);
+  }, [log, resolvePayment]);
 
-  // ── Pending Payments — Force Clear ───────────────────────
+  // ── Force Clear ───────────────────────────────────────────
   const handleForceClear = useCallback(async () => {
-    log('warn', 'Force clearing all pending payments...');
+    log('info', 'Force clearing all pending payments...');
     try {
-      if (!isPiBrowser() || !window.Pi) throw new Error('Not inside Pi Browser');
-
+      if (!window.Pi) throw new Error('Open in Pi Browser');
+      let cleared = 0;
       await window.Pi.authenticate(['username', 'payments'], async (payment: unknown) => {
         const p   = payment as Record<string, unknown> | null;
         const pid = p?.identifier as string | undefined;
-        if (!pid) { log('info', 'Nothing to force clear ✅'); return; }
-
-        log('warn', `Force clearing: ${pid}`);
-        const token     = getAccessToken();
-        const csrfToken = document.cookie
-          .split('; ').find(r => r.startsWith('tec_csrf='))?.split('=')?.[1];
-        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-        if (token)     headers['Authorization'] = `Bearer ${token}`;
-        if (csrfToken) headers['x-csrf-token']  = csrfToken;
-
-        // Step 1: resolve-incomplete
-        try {
-          const res1  = await fetch('/api/bff/payment/resolve-incomplete', {
-            method: 'POST', credentials: 'include', headers,
-            body: JSON.stringify({ pi_payment_id: pid }),
-          });
-          const data1 = await res1.json().catch(() => ({}));
-          log(res1.ok ? 'success' : 'warn', `Resolve attempt: ${JSON.stringify(data1)} (${res1.status})`);
-        } catch (e) { log('warn', `Resolve failed: ${String(e)}`); }
-
-        // Step 2: direct Pi SDK cancel via createPayment with cancel callback
-        try {
-          if (window.Pi?.cancelPayment) {
-            await (window.Pi as any).cancelPayment(pid);
-            log('success', `Pi SDK cancel sent: ${pid}`);
-          } else {
-            log('warn', 'Pi.cancelPayment not available on this SDK version');
-          }
-        } catch (e) { log('warn', `SDK cancel: ${String(e)}`); }
+        if (!pid) return;
+        cleared++;
+        log('warn', `Force clearing: ${pid} | amount: ${p?.amount}`);
+        await resolvePayment(pid);
       });
-    } catch (err) { log('error', `Force clear failed: ${String(err)}`); }
-  }, [log]);
+      if (cleared === 0) {
+        log('success', 'No pending payments ✅');
+      } else {
+        log('info', `Cleared ${cleared} payment(s). Reload and try again.`);
+      }
+    } catch (e) { log('error', `Force clear failed: ${String(e)}`); }
+  }, [log, resolvePayment]);
 
   // ── Payment Test ──────────────────────────────────────────
-  // ✅ زي Commerce بالظبط — createPaymentRecord أولاً ثم createU2APayment
   const handlePayment = useCallback(async () => {
     if (authStatus !== 'done') { log('warn', 'Authenticate first'); return; }
-    log('info', 'Creating payment record (1π)…');
+    log('info', 'Creating payment (1π)…');
     setPayStatus('loading');
-
     try {
-      // Step 1: Backend record (زي Commerce)
-      const internalId = await createPaymentRecord(
-        1,
-        'test_product',
-        'TEC Ecommerce test payment',
-        'ecommerce',
-      );
-
-      if (!internalId) {
-        setPayStatus('error');
-        log('error', 'Failed to create payment record in backend');
-        return;
-      }
-
-      log('info', `Payment record created: ${internalId}`);
-
-      // Step 2: Pi.createPayment (زي Commerce)
       const result = await createU2APayment(
         1,
-        'TEC Ecommerce test payment',
-        { source: 'ecommerce', type: 'test' },
-        internalId,
+        'TEC Ecommerce test — 1π',
+        { source: 'ecommerce', test: true },
       );
-
-      if (result.status === 'completed') {
-        setPayStatus('done');
-        log('success', `✅ Done! id=${result.paymentId} txid=${result.txid}`);
-      } else if (result.status === 'cancelled') {
+      if (result.status === 'cancelled') {
         setPayStatus('cancelled');
         log('warn', `Cancelled (id: ${result.paymentId ?? 'n/a'})`);
+      } else if (result.status === 'completed') {
+        setPayStatus('done');
+        log('success', `✅ Done! id=${result.paymentId} txid=${result.txid}`);
       } else {
         setPayStatus('error');
         log('error', `Failed: ${result.message ?? 'unknown'}`);
@@ -297,7 +251,6 @@ export function PiTestClient() {
 
   const clearLogs = () => setLogs([]);
 
-  // ── Styles ────────────────────────────────────────────────
   const btn = (color = '#333'): React.CSSProperties => ({
     padding: '8px 14px', borderRadius: 6, border: 'none',
     background: color, color: '#fff', cursor: 'pointer',
@@ -306,10 +259,9 @@ export function PiTestClient() {
 
   return (
     <main style={{ fontFamily: 'monospace', maxWidth: 800, margin: '32px auto', padding: '0 16px' }}>
-      <h1 style={{ fontSize: '1.4rem', marginBottom: 4 }}>🥧 TEC Diagnostic Page</h1>
+      <h1 style={{ fontSize: '1.4rem', marginBottom: 4 }}>🥧 TEC Ecommerce Diagnostic</h1>
       <p style={{ fontSize: '0.82rem', color: '#666', marginBottom: 20 }}>
-        Open inside <strong>Pi Browser</strong> · appId:{' '}
-        <code>{process.env.NEXT_PUBLIC_PI_APP_ID ?? '(not set)'}</code>
+        Open inside <strong>Pi Browser</strong> · appId: <code>{process.env.NEXT_PUBLIC_PI_APP_ID ?? '(not set)'}</code>
       </p>
 
       {/* SDK Status */}
@@ -320,13 +272,8 @@ export function PiTestClient() {
       }}>
         <strong>Pi SDK:</strong>{' '}
         {sdkReady === null ? '⏳ waiting…' : sdkReady ? '✅ ready' : '❌ unavailable'}
-        {window.__TEC_PI_FOREIGN_SESSION && (
-          <span style={{ marginLeft: 12, color: '#e67e22', fontSize: '0.78rem' }}>
-            ⚠️ FOREIGN_SESSION
-          </span>
-        )}
         <span style={{ marginLeft: 12, color: '#888', fontSize: '0.78rem' }}>
-          sandbox: {process.env.NEXT_PUBLIC_PI_SANDBOX ?? 'true'}
+          sandbox: {process.env.NEXT_PUBLIC_PI_SANDBOX ?? 'false'}
         </span>
       </div>
 
@@ -346,18 +293,16 @@ export function PiTestClient() {
                 background: s.status === 'ok' ? '#e6f9ee' : s.status === 'error' ? '#fff0f0' : '#f5f5f5',
                 border: '1px solid ' + (s.status === 'ok' ? '#6dd68e' : s.status === 'error' ? '#f99' : '#ddd'),
               }}>
-                <span>{s.status === 'ok' ? '✅' : s.status === 'error' ? '❌' : '⏳'}</span>{' '}
+                {s.status === 'ok' ? '✅' : s.status === 'error' ? '❌' : '⏳'}{' '}
                 <strong>{s.name}</strong>
-                {s.ms !== undefined && (
-                  <span style={{ color: '#888', marginLeft: 4 }}>{s.ms}ms</span>
-                )}
+                {s.ms !== undefined && <span style={{ color: '#888', marginLeft: 4 }}>{s.ms}ms</span>}
               </div>
             ))}
           </div>
         )}
       </section>
 
-      {/* Debug Tools */}
+      {/* Debug */}
       <section style={{ marginBottom: 16, padding: '12px 16px', border: '1px solid #3498db', borderRadius: 8 }}>
         <h2 style={{ fontSize: '1rem', marginBottom: 10, color: '#3498db' }}>🔍 Debug Tools</h2>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -376,26 +321,18 @@ export function PiTestClient() {
           <button onClick={handleAuth} disabled={authStatus === 'loading'} style={btn('#2c3e50')}>
             {authStatus === 'loading' ? 'Authenticating…' : 'Authenticate with Pi'}
           </button>
-          {username              && <span style={{ color: '#2a9a4e' }}>✅ @{username}</span>}
+          {username               && <span style={{ color: '#2a9a4e' }}>✅ @{username}</span>}
           {authStatus === 'error' && <span style={{ color: '#c0392b' }}>❌ Auth failed</span>}
         </div>
       </section>
 
-      {/* ⚠️ Pending Payments — Check & Resolve + Force Clear */}
+      {/* Pending Payments */}
       <section style={{ marginBottom: 16, padding: '12px 16px', border: '1px solid #e67e22', borderRadius: 8 }}>
         <h2 style={{ fontSize: '1rem', marginBottom: 8, color: '#e67e22' }}>⚠️ Pending Payments</h2>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button onClick={handleCancelPending} style={btn('#e67e22')}>
-            Check & Resolve
-          </button>
-          {/* ✅ Force Clear — لو لسه مش بيمسح */}
-          <button onClick={handleForceClear} style={btn('#c0392b')}>
-            🔴 Force Clear
-          </button>
+          <button onClick={handleCancelPending} style={btn('#e67e22')}>Check & Resolve</button>
+          <button onClick={handleForceClear} style={btn('#c0392b')}>🗑 Force Clear</button>
         </div>
-        <p style={{ fontSize: '0.75rem', color: '#999', marginTop: 8, marginBottom: 0 }}>
-          Force Clear: يحاول resolve ثم Pi SDK cancel — يستخدم لو Check & Resolve مش شغّال
-        </p>
       </section>
 
       {/* Payment Test */}
@@ -405,8 +342,7 @@ export function PiTestClient() {
           <button
             onClick={handlePayment}
             disabled={authStatus !== 'done' || payStatus === 'loading'}
-            style={{ ...btn('#8e44ad'), opacity: authStatus !== 'done' ? 0.5 : 1 }}
-          >
+            style={{ ...btn('#8e44ad'), opacity: authStatus !== 'done' ? 0.5 : 1 }}>
             {payStatus === 'loading' ? 'Processing…' : 'Pay 1π (test)'}
           </button>
           {payStatus === 'done'      && <span style={{ color: '#2a9a4e' }}>✅ Complete!</span>}
@@ -419,34 +355,26 @@ export function PiTestClient() {
       <section>
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8, gap: 12 }}>
           <h2 style={{ fontSize: '1rem', margin: 0 }}>📋 Logs ({logs.length})</h2>
-          <button onClick={clearLogs} style={{ fontSize: '0.75rem', padding: '2px 8px', cursor: 'pointer' }}>
-            Clear
-          </button>
+          <button onClick={clearLogs} style={{ fontSize: '0.75rem', padding: '2px 8px', cursor: 'pointer' }}>Clear</button>
         </div>
         <div style={{
           background: '#1a1a1a', color: '#eee', padding: 14, borderRadius: 6,
           minHeight: 120, maxHeight: 500, overflowY: 'auto',
           fontSize: '0.76rem', lineHeight: 1.7,
         }}>
-          {logs.length === 0 ? (
-            <span style={{ color: '#888' }}>— no events yet —</span>
-          ) : (
-            logs.map((e, i) => (
+          {logs.length === 0
+            ? <span style={{ color: '#888' }}>— no events yet —</span>
+            : logs.map((e, i) => (
               <div key={i} style={{
-                color: e.type === 'error'   ? '#ff6b6b'
-                     : e.type === 'warn'    ? '#ffd93d'
-                     : e.type === 'success' ? '#6bcb77'
-                     : '#ddd',
-                borderBottom: '1px solid #2a2a2a',
-                paddingBottom: 2,
-                marginBottom: 2,
+                color: e.type === 'error' ? '#ff6b6b' : e.type === 'warn' ? '#ffd93d' : e.type === 'success' ? '#6bcb77' : '#ddd',
+                borderBottom: '1px solid #2a2a2a', paddingBottom: 2, marginBottom: 2,
               }}>
                 <span style={{ color: '#888' }}>{e.ts}</span>{' '}{e.msg}
               </div>
             ))
-          )}
+          }
         </div>
       </section>
     </main>
   );
-            }
+                                }
