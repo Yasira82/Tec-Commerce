@@ -1,7 +1,12 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { isPiBrowser, loginWithPi, getStoredUser, getAccessToken } from '@/lib-client/pi/pi-auth';
+import {
+  isPiBrowser,
+  loginWithPi,
+  getStoredUser,
+  getAccessToken,
+} from '@/lib-client/pi/pi-auth';
 import { createU2APayment } from '@/lib-client/pi/pi-payment';
 
 type LogEntry = { ts: string; type: 'info' | 'success' | 'error' | 'warn'; msg: string };
@@ -47,12 +52,12 @@ export function PiTestClient() {
   // ── Pi SDK ────────────────────────────────────────────────
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (window.__TEC_PI_READY) { setSdkReady(true); log('success', 'Pi SDK already initialised'); return; }
-    if (window.__TEC_PI_ERROR) { setSdkReady(false); log('error', 'Pi SDK failed to initialise'); return; }
+    if (window.__TEC_PI_READY) { setSdkReady(true);  log('success', 'Pi SDK already initialised'); return; }
+    if (window.__TEC_PI_ERROR) { setSdkReady(false); log('error',   'Pi SDK failed to initialise'); return; }
 
     let resolved = false;
-    const onReady = () => { resolved = true; setSdkReady(true); log('success', 'Pi SDK initialised'); };
-    const onError = () => { resolved = true; setSdkReady(false); log('error', 'Pi SDK init error'); };
+    const onReady = () => { resolved = true; setSdkReady(true);  log('success', 'Pi SDK initialised'); };
+    const onError = () => { resolved = true; setSdkReady(false); log('error',   'Pi SDK init error'); };
 
     window.addEventListener('tec-pi-ready', onReady, { once: true });
     window.addEventListener('tec-pi-error', onError, { once: true });
@@ -132,8 +137,7 @@ export function PiTestClient() {
       const start = Date.now();
       const res   = await fetch('/api/health', { cache: 'no-store' });
       const data  = await res.json();
-      const ms    = Date.now() - start;
-      log(res.ok ? 'success' : 'error', `BFF Health: ${JSON.stringify(data)} (${ms}ms)`);
+      log(res.ok ? 'success' : 'error', `BFF Health: ${JSON.stringify(data)} (${Date.now() - start}ms)`);
     } catch (err) { log('error', `BFF Health failed: ${String(err)}`); }
   }, [log]);
 
@@ -143,8 +147,10 @@ export function PiTestClient() {
       const res = await fetch('/api/auth/sso?target=https://ecommerce.tecosystem.app', {
         credentials: 'include', redirect: 'manual',
       });
-      log(res.status === 302 || res.status === 307 ? 'success' : 'warn',
-        `SSO response: ${res.status} ${res.statusText}`);
+      log(
+        res.status === 302 || res.status === 307 ? 'success' : 'warn',
+        `SSO response: ${res.status} ${res.statusText}`,
+      );
     } catch (err) { log('error', `SSO test failed: ${String(err)}`); }
   }, [log]);
 
@@ -165,15 +171,20 @@ export function PiTestClient() {
   }, [log]);
 
   // ── Resolve helper ────────────────────────────────────────
-  const resolvePayment = useCallback(async (pid: string) => {
+  // ✅ الـ URL الصح: /api/bff/payment/resolve-incomplete
+  const resolvePayment = useCallback(async (pid: string): Promise<boolean> => {
     const token = getAccessToken();
+    const csrf  = getCsrf();
+
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (token)     headers['Authorization'] = `Bearer ${token}`;
-    if (getCsrf()) headers['x-csrf-token']  = getCsrf();
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    if (csrf)  headers['x-csrf-token']  = csrf;
 
     try {
-      const res  = await fetch(`/api/payment/resolve-incomplete?pi_payment_id=${encodeURIComponent(pid)}`, {
-        method: 'POST', credentials: 'include', headers,
+      const res  = await fetch('/api/bff/payment/resolve-incomplete', {
+        method:      'POST',
+        credentials: 'include',
+        headers,
         body: JSON.stringify({ pi_payment_id: pid }),
       });
       const data = await res.json().catch(() => ({}));
@@ -185,8 +196,15 @@ export function PiTestClient() {
     }
   }, [log]);
 
-  // ── Pending Payments ──────────────────────────────────────
+  // ── Pending — Check & Resolve ─────────────────────────────
   const handleCancelPending = useCallback(async () => {
+    // ✅ لازم يكون logged in الأول
+    const token = getAccessToken();
+    if (!token) {
+      log('warn', '⚠️ Authenticate first → then Check & Resolve');
+      return;
+    }
+
     log('info', 'Checking for pending payments...');
     try {
       if (!isPiBrowser() || !window.Pi) throw new Error('Not inside Pi Browser');
@@ -200,9 +218,16 @@ export function PiTestClient() {
     } catch (err) { log('error', `Failed: ${String(err)}`); }
   }, [log, resolvePayment]);
 
-  // ── Force Clear ───────────────────────────────────────────
+  // ── Pending — Force Clear ─────────────────────────────────
   const handleForceClear = useCallback(async () => {
-    log('info', 'Force clearing all pending payments...');
+    // ✅ لازم يكون logged in الأول
+    const token = getAccessToken();
+    if (!token) {
+      log('warn', '⚠️ Authenticate first → then Force Clear');
+      return;
+    }
+
+    log('warn', 'Force clearing pending payments...');
     try {
       if (!window.Pi) throw new Error('Open in Pi Browser');
       let cleared = 0;
@@ -233,12 +258,12 @@ export function PiTestClient() {
         'TEC Ecommerce test — 1π',
         { source: 'ecommerce', test: true },
       );
-      if (result.status === 'cancelled') {
-        setPayStatus('cancelled');
-        log('warn', `Cancelled (id: ${result.paymentId ?? 'n/a'})`);
-      } else if (result.status === 'completed') {
+      if (result.status === 'completed') {
         setPayStatus('done');
         log('success', `✅ Done! id=${result.paymentId} txid=${result.txid}`);
+      } else if (result.status === 'cancelled') {
+        setPayStatus('cancelled');
+        log('warn', `Cancelled (id: ${result.paymentId ?? 'n/a'})`);
       } else {
         setPayStatus('error');
         log('error', `Failed: ${result.message ?? 'unknown'}`);
@@ -261,7 +286,8 @@ export function PiTestClient() {
     <main style={{ fontFamily: 'monospace', maxWidth: 800, margin: '32px auto', padding: '0 16px' }}>
       <h1 style={{ fontSize: '1.4rem', marginBottom: 4 }}>🥧 TEC Ecommerce Diagnostic</h1>
       <p style={{ fontSize: '0.82rem', color: '#666', marginBottom: 20 }}>
-        Open inside <strong>Pi Browser</strong> · appId: <code>{process.env.NEXT_PUBLIC_PI_APP_ID ?? '(not set)'}</code>
+        Open inside <strong>Pi Browser</strong> · appId:{' '}
+        <code>{process.env.NEXT_PUBLIC_PI_APP_ID ?? '(not set)'}</code>
       </p>
 
       {/* SDK Status */}
@@ -276,6 +302,16 @@ export function PiTestClient() {
           sandbox: {process.env.NEXT_PUBLIC_PI_SANDBOX ?? 'false'}
         </span>
       </div>
+
+      {/* ✅ Auth required notice */}
+      {authStatus !== 'done' && (
+        <div style={{
+          marginBottom: 16, padding: '10px 14px', borderRadius: 6,
+          background: '#fff8e1', border: '1px solid #f9c74f', fontSize: '0.82rem',
+        }}>
+          ⚠️ <strong>Authenticate first</strong> before resolving pending payments or running payment tests.
+        </div>
+      )}
 
       {/* Services */}
       <section style={{ marginBottom: 16, padding: '12px 16px', border: '1px solid #e74c3c', borderRadius: 8 }}>
@@ -329,9 +365,24 @@ export function PiTestClient() {
       {/* Pending Payments */}
       <section style={{ marginBottom: 16, padding: '12px 16px', border: '1px solid #e67e22', borderRadius: 8 }}>
         <h2 style={{ fontSize: '1rem', marginBottom: 8, color: '#e67e22' }}>⚠️ Pending Payments</h2>
+        <p style={{ fontSize: '0.78rem', color: '#999', marginTop: 0, marginBottom: 8 }}>
+          Authenticate first, then resolve.
+        </p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button onClick={handleCancelPending} style={btn('#e67e22')}>Check & Resolve</button>
-          <button onClick={handleForceClear} style={btn('#c0392b')}>🗑 Force Clear</button>
+          <button
+            onClick={handleCancelPending}
+            disabled={authStatus !== 'done'}
+            style={{ ...btn('#e67e22'), opacity: authStatus !== 'done' ? 0.5 : 1 }}
+          >
+            Check & Resolve
+          </button>
+          <button
+            onClick={handleForceClear}
+            disabled={authStatus !== 'done'}
+            style={{ ...btn('#c0392b'), opacity: authStatus !== 'done' ? 0.5 : 1 }}
+          >
+            🗑 Force Clear
+          </button>
         </div>
       </section>
 
@@ -342,7 +393,8 @@ export function PiTestClient() {
           <button
             onClick={handlePayment}
             disabled={authStatus !== 'done' || payStatus === 'loading'}
-            style={{ ...btn('#8e44ad'), opacity: authStatus !== 'done' ? 0.5 : 1 }}>
+            style={{ ...btn('#8e44ad'), opacity: authStatus !== 'done' ? 0.5 : 1 }}
+          >
             {payStatus === 'loading' ? 'Processing…' : 'Pay 1π (test)'}
           </button>
           {payStatus === 'done'      && <span style={{ color: '#2a9a4e' }}>✅ Complete!</span>}
@@ -355,7 +407,9 @@ export function PiTestClient() {
       <section>
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8, gap: 12 }}>
           <h2 style={{ fontSize: '1rem', margin: 0 }}>📋 Logs ({logs.length})</h2>
-          <button onClick={clearLogs} style={{ fontSize: '0.75rem', padding: '2px 8px', cursor: 'pointer' }}>Clear</button>
+          <button onClick={clearLogs} style={{ fontSize: '0.75rem', padding: '2px 8px', cursor: 'pointer' }}>
+            Clear
+          </button>
         </div>
         <div style={{
           background: '#1a1a1a', color: '#eee', padding: 14, borderRadius: 6,
@@ -366,8 +420,13 @@ export function PiTestClient() {
             ? <span style={{ color: '#888' }}>— no events yet —</span>
             : logs.map((e, i) => (
               <div key={i} style={{
-                color: e.type === 'error' ? '#ff6b6b' : e.type === 'warn' ? '#ffd93d' : e.type === 'success' ? '#6bcb77' : '#ddd',
-                borderBottom: '1px solid #2a2a2a', paddingBottom: 2, marginBottom: 2,
+                color: e.type === 'error'   ? '#ff6b6b'
+                     : e.type === 'warn'    ? '#ffd93d'
+                     : e.type === 'success' ? '#6bcb77'
+                     : '#ddd',
+                borderBottom: '1px solid #2a2a2a',
+                paddingBottom: 2,
+                marginBottom: 2,
               }}>
                 <span style={{ color: '#888' }}>{e.ts}</span>{' '}{e.msg}
               </div>
@@ -377,4 +436,4 @@ export function PiTestClient() {
       </section>
     </main>
   );
-                                }
+          }
