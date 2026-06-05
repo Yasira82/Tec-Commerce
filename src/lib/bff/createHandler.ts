@@ -72,7 +72,7 @@ async function extractContext(req: NextRequest): Promise<BFFContext> {
 
 export const GATEWAY_URL =
   process.env.API_GATEWAY_URL ??
-  process.env.NEXT_PUBLIC_API_GATEWAY_URL ??
+  process.env.API_GATEWAY_URL ??
   'https://api-gateway-production-6a68.up.railway.app';
 
 export function createHandler<TInput = Record<string, never>, TOutput = unknown>(config: {

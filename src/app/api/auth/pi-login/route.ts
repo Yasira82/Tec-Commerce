@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID }                from 'crypto';
 
-const GATEWAY = process.env.NEXT_PUBLIC_API_GATEWAY_URL!;
+const GATEWAY = process.env.API_GATEWAY_URL!;
 
 const fetchWithTimeout = async (url: string, options: RequestInit, ms: number): Promise<Response> => {
   const controller = new AbortController();
