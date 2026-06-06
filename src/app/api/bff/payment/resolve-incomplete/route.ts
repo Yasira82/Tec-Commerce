@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const GW = process.env.API_GATEWAY_URL
-        ?? process.env.API_GATEWAY_URL
+const GW = process.env.API_GATEWAY_URL ?? process.env.NEXT_PUBLIC_API_GATEWAY_URL
         ?? 'https://api-gateway-production-6a68.up.railway.app';
 
 export async function POST(req: NextRequest) {
