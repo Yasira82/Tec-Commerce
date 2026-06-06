@@ -118,12 +118,20 @@ style(commerce): UI polish
 ## Phase 0 Items (C-41 — Before Mainnet)
 
 ```
-□ Write Vitest tests — target ≥ 60%
+□ Write Vitest tests — target ≥ 60%    ← NEXT priority
 □ Document Pi App ID + domain (tec-commerce → tecosystem.app/commerce)
 □ Upgrade to @yasser172/tec-ui PaymentModal when v1.2.0 publishes
 □ PI_SANDBOX=false verified in production
 □ Analytics connection to tec-analytics-service
 ```
+
+### Test Coverage Targets (Phase 0 gate — target ≥ 60%)
+| File | Priority | Scenarios |
+|------|----------|-----------|
+| Merchant auth guard | HIGH | missing cookie, valid merchant, wrong role |
+| Payment handler (ADR-007) | HIGH | isHubNavigation true/false, piReady false, success |
+| Order creation flow | HIGH | success, payment_id mismatch, duplicate order |
+| BFF routes (products, orders) | MEDIUM | auth fail, gateway error, pagination |
 
 ---
 
@@ -141,6 +149,46 @@ style(commerce): UI polish
 - Order fulfillment: full cycle through tec-commerce-service
 - Revenue analytics: merchant sees Pi earnings by product and period
 - Tests coverage ≥ 60% before Phase 1
+
+---
+
+## Common Debug Patterns
+
+### "Merchant sees another merchant's orders"
+```
+Symptom: Merchant dashboard shows orders not belonging to them.
+Cause:   Merchant identity derived from request body (merchantId from client).
+         Policy CI blocks body.userId/merchantId — this is a P0 security issue.
+Fix:     ALWAYS derive merchant identity from tec_user cookie (server-side only).
+         Never trust client-sent merchantId — verify from authenticated session.
+```
+
+### "Order stuck in 'pending' after Pi payment completes"
+```
+Symptom: Pi payment succeeds (user gets confirmation) but order not created.
+Cause:   POST /api/bff/orders not called after payment completion.
+         Or: payment_id not passed correctly in the order payload.
+Fix:     Verify onReadyForServerCompletion callback calls POST /api/bff/orders.
+         Payload must include: { items: [{productId, qty}], payment_id }.
+         Check tec-commerce-service logs for order creation errors.
+```
+
+### "Revenue figures show incorrect decimals"
+```
+Symptom: Revenue shows as integer or truncated (e.g., 1 instead of 1.00000000).
+Cause:   Pi amounts converted to JS Number (floating point precision loss).
+Fix:     Pi amounts are DECIMAL(20,8) in DB and string in API responses.
+         Keep as string until final display: parseFloat(amount).toFixed(2) + ' π'.
+         Never store Pi amounts as JS Number internally.
+```
+
+### "Payment modal opens but Pi Wallet doesn't appear"
+```
+Symptom: Payment UI shows but Pi Browser dialog never opens.
+Cause:   isHubNavigation() not checked — Pi SDK in foreign session.
+Fix:     if (isHubNavigation() || !piReady) → redirect to Hub payment modal.
+         This guard MUST exist in every payment handler — DO NOT REMOVE.
+```
 
 ---
 
