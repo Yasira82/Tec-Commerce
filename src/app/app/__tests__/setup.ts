@@ -6,11 +6,13 @@ import { vi } from 'vitest';
 (globalThis as any).$RefreshReg$ = () => {};
 
 // ✅ Cookie mock — configurable:true عشان كل test يقدر يعيد تعريفه
-Object.defineProperty(document, 'cookie', {
-  writable:     true,
-  configurable: true,
-  value:        '',
-});
+if (typeof document !== 'undefined') {
+  Object.defineProperty(document, 'cookie', {
+    writable:     true,
+    configurable: true,
+    value:        '',
+  });
+}
 
 vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
