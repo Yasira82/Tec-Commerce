@@ -241,3 +241,49 @@ Full platform context, ADR system, and engineering roadmap:
 → `TEC_Ecosystem_AI_Key.prompt.yml` in yasira82/tec-app
 → C-47 Kernel Spec — P6 Fail Closed, Order invariants, Merchant authorization
 → C-41 Engineering Roadmap — Phase 0 commerce items
+
+---
+
+## Dynamic Orchestration
+
+### Ecosystem Role
+**Reference Implementation** — first to implement any new platform pattern. If a payment, BFF, or auth pattern works here, it is then propagated to tec-assets and tec-ecommerce.
+
+### Dependency Map
+
+| Direction | Repos / Services |
+|-----------|----------------|
+| Upstream | `@yasser172/tec-auth` · `@yasser172/tec-ui` · `@yasser172/tec-sdk` · `tec-core-backend` (tec-commerce-service:4003) |
+| Downstream | `tec-ecommerce` follows commerce patterns — validate here first |
+
+### Cross-Repo Workflow Triggers
+
+| Event | Coordinate With | Required Action |
+|-------|----------------|----------------|
+| New payment pattern | tec-ecommerce, tec-assets | Validate here FIRST → document in C-60 → then propagate |
+| New BFF route pattern | tec-app (Hub) | Commerce = reference impl — Hub adopts proven patterns |
+| Merchant auth pattern change | tec-core-backend | Verify no `body.merchantId` — Policy CI must pass |
+| `@yasser172/tec-ui` version bump | tec-app, tec-assets, tec-ecommerce | Coordinate simultaneous deploy with all 4 apps |
+| tec-commerce-service API change | tec-sdk | SDK contract must be updated before frontend routes |
+
+### Release Chain Position
+
+```
+tec-core-backend (deploy)
+  → tec-sdk (npm publish)
+    → tec-auth (npm publish)
+      → tec-ui (npm publish)
+        → tec-app + tec-ecommerce + tec-assets + tec-commerce  ← HERE (simultaneous)
+```
+
+### Orchestration Rules
+- Commerce = reference implementation (C-47) — test new patterns here before any other app
+- Merchant identity ALWAYS from `tec_user` cookie (server-side) — never from request body
+- Order state machine owned by `tec-commerce-service` — never duplicate state logic in BFF
+
+### Knowledge Base Reference
+→ `yasira82/tec-knowledge-base` (branch: `claude/gifted-knuth-1yhom3`)
+→ Master index: `knowledge-base/C-57___MASTER_CONTENTS_INDEX.md`
+→ Domain ownership matrix: `knowledge-base/C-68___DOMAIN_OWNERSHIP_MATRIX.md`
+→ API contracts governance: `knowledge-base/C-69___API_CONTRACTS_GOVERNANCE.md`
+→ Payment ownership (ADR-007): `knowledge-base/C-76___ADR-007.md`
