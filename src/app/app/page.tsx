@@ -1,5 +1,5 @@
 'use client';
-
+// v1.2.1
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { usePiAuth }                                from '@/lib-client/hooks/usePiAuth';
 import { ErrorBoundary }                            from '@/components/ErrorBoundary';
@@ -12,7 +12,7 @@ import { SellerOrderCard }                          from './components/SellerOrd
 import { CommerceDrawer }                           from './components/CommerceDrawer';
 import { Product, Order, MainTab }                  from './types';
 import { createPaymentRecord, createU2APayment }    from '@/lib/pi-payment';
-import { PaymentModal, PayStatus }                  from '@/components/PaymentModal';
+import { PaymentModal, PayStatus }                  from '@yasser172/tec-ui/payment';
 
 const HUB_URL      = process.env.NEXT_PUBLIC_HUB_URL      ?? 'https://hub.tecosystem.app';
 const COMMERCE_URL = process.env.NEXT_PUBLIC_COMMERCE_URL ?? 'https://commerce.tecosystem.app';
