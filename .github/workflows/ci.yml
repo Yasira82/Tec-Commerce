@@ -1,5 +1,5 @@
 name: CI
-
+# v1.2.1
 on:
   push:
     branches: [main]
