@@ -9,8 +9,17 @@ const CSRF_PROTECTED    = [
   '/api/bff/marketplace/',
 ];
 
-// ✅ Payment routes مستثناة — JWT + Idempotency-Key بيحموها
+// Payment routes excluded — JWT + Idempotency-Key provide equivalent protection (ADR-007, C-76)
 const CSRF_EXCLUDED = ['/api/bff/payment/'];
+
+function timingSafeStringEqual(a: string, b: string): boolean {
+  const aBytes = new TextEncoder().encode(a);
+  const bBytes = new TextEncoder().encode(b);
+  if (aBytes.length !== bBytes.length) return false;
+  let diff = 0;
+  for (let i = 0; i < aBytes.length; i++) diff |= aBytes[i] ^ bBytes[i];
+  return diff === 0;
+}
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -27,13 +36,13 @@ export function middleware(req: NextRequest) {
   }
 
   if (!CSRF_SAFE_METHODS.has(method)) {
-    const isExcluded    = CSRF_EXCLUDED.some(r => pathname.startsWith(r));
+    const isExcluded      = CSRF_EXCLUDED.some(r => pathname.startsWith(r));
     const isCsrfProtected = !isExcluded && CSRF_PROTECTED.some(r => pathname.startsWith(r));
 
     if (isCsrfProtected) {
       const csrfCookie = req.cookies.get('tec_csrf')?.value;
       const csrfHeader = req.headers.get('x-csrf-token');
-      if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) {
+      if (!csrfCookie || !csrfHeader || !timingSafeStringEqual(csrfCookie, csrfHeader)) {
         return NextResponse.json(
           { error: 'Invalid CSRF token', code: 'CSRF_INVALID' },
           { status: 403 },
