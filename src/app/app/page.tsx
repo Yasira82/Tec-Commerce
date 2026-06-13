@@ -1,5 +1,5 @@
 'use client';
-
+// v1.2.1
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { usePiAuth }                                from '@/lib-client/hooks/usePiAuth';
 import { ErrorBoundary }                            from '@/components/ErrorBoundary';
