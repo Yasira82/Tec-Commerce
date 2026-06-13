@@ -30,14 +30,7 @@ export interface BFFContext {
 async function extractContext(req: NextRequest): Promise<BFFContext> {
   const token = req.cookies.get('tec_access_token')?.value;
 
-  // ── Debug ─────────────────────────────────────────────
-  const allCookies = req.cookies.getAll().map(c => c.name);
-  console.log('[BFF] cookies:', allCookies.join(', ') || 'NONE');
-  console.log('[BFF] token exists:', !!token);
-  console.log('[BFF] token prefix:', token?.substring(0, 20) ?? 'N/A');
-
   if (!token) {
-    console.warn('[BFF] No tec_access_token cookie found');
     throw new UnauthorizedError();
   }
 
@@ -56,8 +49,6 @@ async function extractContext(req: NextRequest): Promise<BFFContext> {
     const userId = payload.sub;
     if (!userId) throw new UnauthorizedError();
 
-    console.log('[BFF] auth ok — userId:', userId);
-
     return {
       userId,
       kycVerified: (payload as Record<string, unknown>).kycVerified === true,
@@ -70,10 +61,7 @@ async function extractContext(req: NextRequest): Promise<BFFContext> {
   }
 }
 
-export const GATEWAY_URL =
-  process.env.API_GATEWAY_URL ??
-  process.env.API_GATEWAY_URL ??
-  'https://api-gateway-production-6a68.up.railway.app';
+export const GATEWAY_URL = process.env.API_GATEWAY_URL ?? '';
 
 export function createHandler<TInput = Record<string, never>, TOutput = unknown>(config: {
   schema?:      z.ZodSchema<TInput>;
