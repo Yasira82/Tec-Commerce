@@ -1,5 +1,5 @@
 name: CI
-# v1.2.1
+
 on:
   push:
     branches: [main]
@@ -14,15 +14,7 @@ on:
       - '.github/workflows/ci.yml'
   pull_request:
     branches: [main]
-    paths:
-      - 'src/**'
-      - 'public/**'
-      - 'package*.json'
-      - 'tsconfig.json'
-      - 'next.config.js'
-      - 'vitest.config.ts'
-      - 'eslint.config.mjs'
-      - '.github/workflows/ci.yml'
+  workflow_dispatch:
   workflow_dispatch:
 
 permissions:
