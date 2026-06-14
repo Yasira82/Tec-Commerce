@@ -1,3 +1,7 @@
+> ⚡ **SESSION START — أول حاجة:** اقرأ `knowledge-base/C-02___CURRENT_STATE_.md` من `yasira82/tec-knowledge-base` (branch: `claude/gifted-knuth-1yhom3`) — ده مصدر الحقيقة للوضع الحالي. لا تعتمد على الذاكرة أو الملخص.
+
+---
+
 # TEC Commerce — Claude Code Instructions
 
 ## What This App Is
@@ -143,15 +147,6 @@ style(commerce): UI polish
 
 ---
 
-## Commercial Targets
-
-- Merchant onboarding: dashboard live before Phase 2 (Pi Portal submission)
-- Order fulfillment: full cycle through tec-commerce-service
-- Revenue analytics: merchant sees Pi earnings by product and period
-- Tests coverage ≥ 60% before Phase 1
-
----
-
 ## Common Debug Patterns
 
 ### "Merchant sees another merchant's orders"
@@ -173,23 +168,6 @@ Fix:     Verify onReadyForServerCompletion callback calls POST /api/bff/orders.
          Check tec-commerce-service logs for order creation errors.
 ```
 
-### "Revenue figures show incorrect decimals"
-```
-Symptom: Revenue shows as integer or truncated (e.g., 1 instead of 1.00000000).
-Cause:   Pi amounts converted to JS Number (floating point precision loss).
-Fix:     Pi amounts are DECIMAL(20,8) in DB and string in API responses.
-         Keep as string until final display: parseFloat(amount).toFixed(2) + ' π'.
-         Never store Pi amounts as JS Number internally.
-```
-
-### "Payment modal opens but Pi Wallet doesn't appear"
-```
-Symptom: Payment UI shows but Pi Browser dialog never opens.
-Cause:   isHubNavigation() not checked — Pi SDK in foreign session.
-Fix:     if (isHubNavigation() || !piReady) → redirect to Hub payment modal.
-         This guard MUST exist in every payment handler — DO NOT REMOVE.
-```
-
 ---
 
 ## Risk Register
@@ -203,22 +181,6 @@ Fix:     if (isHubNavigation() || !piReady) → redirect to Hub payment modal.
 
 ---
 
-## Platform Governance
-
-### SHARED
-- Merchant identity: derive from `tec_user` cookie — never from request body
-- Order state machine: tec-commerce-service owns all order transitions
-- Payment: Mode 1/2 via ADR-007 pattern
-- Revenue figures: DECIMAL(20,8) in DB, string in API responses
-
-### SOVEREIGN
-- Merchant dashboard UI and layout
-- Analytics views and reporting design
-- Product management workflow
-- Order fulfillment tracking UI
-
----
-
 ## Release Gate Protocol
 
 ```bash
@@ -226,68 +188,16 @@ npm run type-check    # 0 errors
 npm run lint          # 0 errors
 npx vitest            # all pass
 git status            # clean
-git fetch origin claude/ecommerce-engineering-review-EuiQO
-git rebase origin/claude/ecommerce-engineering-review-EuiQO
 ```
-
-Merchant security check: verify no `body.merchantId` or `body.userId` used to derive identity.
 
 ---
 
-## Platform Context
-
-Full platform context, ADR system, and engineering roadmap:
-→ `TEC_MODELS_PAT.prompt.yml` in yasira82/tec-app (branch: claude/ecommerce-engineering-review-EuiQO)
-→ `TEC_Ecosystem_AI_Key.prompt.yml` in yasira82/tec-app
-→ C-47 Kernel Spec — P6 Fail Closed, Order invariants, Merchant authorization
-→ C-41 Engineering Roadmap — Phase 0 commerce items
-
----
-
-## Dynamic Orchestration
-
-### Ecosystem Role
-**Reference Implementation** — first to implement any new platform pattern. If a payment, BFF, or auth pattern works here, it is then propagated to tec-assets and tec-ecommerce.
-
-### Dependency Map
-
-| Direction | Repos / Services |
-|-----------|----------------|
-| Upstream | `@yasser172/tec-auth` · `@yasser172/tec-ui` · `@yasser172/tec-sdk` · `tec-core-backend` (tec-commerce-service:4003) |
-| Downstream | `tec-ecommerce` follows commerce patterns — validate here first |
-
-### Cross-Repo Workflow Triggers
-
-| Event | Coordinate With | Required Action |
-|-------|----------------|----------------|
-| New payment pattern | tec-ecommerce, tec-assets | Validate here FIRST → document in C-60 → then propagate |
-| New BFF route pattern | tec-app (Hub) | Commerce = reference impl — Hub adopts proven patterns |
-| Merchant auth pattern change | tec-core-backend | Verify no `body.merchantId` — Policy CI must pass |
-| `@yasser172/tec-ui` version bump | tec-app, tec-assets, tec-ecommerce | Coordinate simultaneous deploy with all 4 apps |
-| tec-commerce-service API change | tec-sdk | SDK contract must be updated before frontend routes |
-
-### Release Chain Position
-
-```
-tec-core-backend (deploy)
-  → tec-sdk (npm publish)
-    → tec-auth (npm publish)
-      → tec-ui (npm publish)
-        → tec-app + tec-ecommerce + tec-assets + tec-commerce  ← HERE (simultaneous)
-```
-
-### Orchestration Rules
-- Commerce = reference implementation (C-47) — test new patterns here before any other app
-- Merchant identity ALWAYS from `tec_user` cookie (server-side) — never from request body
-- Order state machine owned by `tec-commerce-service` — never duplicate state logic in BFF
-
-### Knowledge Base Reference
+## Knowledge Base Reference
 → `yasira82/tec-knowledge-base` (branch: `claude/gifted-knuth-1yhom3`)
+→ **Current State: `knowledge-base/C-02___CURRENT_STATE_.md`** — اقرأه أول كل session
 → Master index: `knowledge-base/C-57___MASTER_CONTENTS_INDEX.md`
 → Domain ownership matrix: `knowledge-base/C-68___DOMAIN_OWNERSHIP_MATRIX.md`
-→ API contracts governance: `knowledge-base/C-69___API_CONTRACTS_GOVERNANCE.md`
 → Payment ownership (ADR-007): `knowledge-base/C-76___ADR-007.md`
-
 
 ---
 
