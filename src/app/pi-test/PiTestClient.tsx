@@ -101,14 +101,14 @@ export function PiTestClient() {
       acc[k] = k.includes('token') || k.includes('csrf') ? v?.slice(0, 30) + '...' : v;
       return acc;
     }, {} as Record<string, string>);
-    log('info', `🍪 Cookies: ${JSON.stringify(cookies, null, 2)}`);
+    log('info', `Cookies: ${JSON.stringify(cookies, null, 2)}`);
   }, [log]);
 
   const handleShowUser = useCallback(() => {
     const user  = getStoredUser();
     const token = getAccessToken();
-    log('info', `👤 User: ${JSON.stringify(user, null, 2)}`);
-    log('info', `🔑 Token: ${!!token} | ${token?.slice(0, 20) ?? 'N/A'}...`);
+    log('info', `User: ${JSON.stringify(user, null, 2)}`);
+    log('info', `Token exists: ${!!token} | ${token?.slice(0, 20) ?? 'N/A'}...`);
   }, [log]);
 
   const handleCheckHealth = useCallback(async () => {
@@ -116,7 +116,7 @@ export function PiTestClient() {
     try {
       const res  = await fetch('/api/health', { cache: 'no-store' });
       const data = await res.json();
-      log(res.ok ? 'success' : 'error', `🏥 Health: ${JSON.stringify(data)}`);
+      log(res.ok ? 'success' : 'error', `Health: ${JSON.stringify(data)}`);
     } catch (err) {
       log('error', `Health check failed: ${String(err)}`);
     }
@@ -129,16 +129,15 @@ export function PiTestClient() {
       await window.Pi.authenticate(['username', 'payments'], async (payment: unknown) => {
         const p   = payment as Record<string, unknown> | null;
         const pid = p?.identifier as string | undefined;
-        if (!pid) { log('info', 'No pending payment ✅'); return; }
+        if (!pid) { log('info', 'No pending payment'); return; }
         log('warn', `Pending: ${pid} | amount: ${p?.amount}`);
-        const token     = getAccessToken();
         const csrfToken = document.cookie.split('; ').find(r => r.startsWith('tec_csrf='))?.split('=')?.[1];
-        const headers: Record<string, string> = {};
-        if (token)     headers['Authorization'] = `Bearer ${token}`;
-        if (csrfToken) headers['x-csrf-token']  = csrfToken;
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (csrfToken) headers['x-csrf-token'] = csrfToken;
         try {
-          const res  = await fetch(`/api/payment/resolve-incomplete?pi_payment_id=${encodeURIComponent(pid)}`, {
+          const res  = await fetch('/api/bff/payment/resolve-incomplete', {
             method: 'POST', credentials: 'include', headers,
+            body: JSON.stringify({ pi_payment_id: pid }),
           });
           const data = await res.json().catch(() => ({}));
           log(res.ok ? 'success' : 'error', `Resolve: ${JSON.stringify(data)} (${res.status})`);
@@ -162,7 +161,7 @@ export function PiTestClient() {
         log('warn', `Cancelled (id: ${result.paymentId ?? 'n/a'})`);
       } else if (result.status === 'completed') {
         setPayStatus('done');
-        log('success', `✅ Done! id=${result.paymentId} txid=${result.txid}`);
+        log('success', `Done! id=${result.paymentId} txid=${result.txid}`);
       } else {
         setPayStatus('error');
         log('error', `Failed: ${result.message ?? 'unknown'}`);
@@ -183,9 +182,9 @@ export function PiTestClient() {
 
   return (
     <main style={{ fontFamily: 'monospace', maxWidth: 800, margin: '32px auto', padding: '0 16px' }}>
-      <h1 style={{ fontSize: '1.4rem', marginBottom: 4 }}>🥇 TEC Diagnostic Page</h1>
+      <h1 style={{ fontSize: '1.4rem', marginBottom: 4 }}>TEC Diagnostic Page</h1>
       <p style={{ fontSize: '0.82rem', color: '#666', marginBottom: 20 }}>
-        Open inside <strong>Pi Browser</strong> · appId: <code>{process.env.NEXT_PUBLIC_PI_APP_ID ?? '(not set)'}</code>
+        Open inside <strong>Pi Browser</strong> &middot; appId: <code>{process.env.NEXT_PUBLIC_PI_APP_ID ?? '(not set)'}</code>
       </p>
 
       <div style={{
@@ -194,20 +193,20 @@ export function PiTestClient() {
         border: '1px solid ' + (sdkReady === null ? '#ddd' : sdkReady ? '#6dd68e' : '#f99'),
       }}>
         <strong>Pi SDK:</strong>{' '}
-        {sdkReady === null ? '⏳ waiting…' : sdkReady ? '✅ ready' : '❌ unavailable'}
+        {sdkReady === null ? 'waiting...' : sdkReady ? 'ready' : 'unavailable'}
         <span style={{ marginLeft: 12, color: '#888', fontSize: '0.78rem' }}>
           sandbox: {process.env.NEXT_PUBLIC_PI_SANDBOX ?? 'true'}
         </span>
       </div>
 
       <section style={{ marginBottom: 16, padding: '12px 16px', border: '1px solid #3498db', borderRadius: 8 }}>
-        <h2 style={{ fontSize: '1rem', marginBottom: 10, color: '#3498db' }}>🔍 Debug Tools</h2>
+        <h2 style={{ fontSize: '1rem', marginBottom: 10, color: '#3498db' }}>Debug Tools</h2>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button onClick={handleShowCookies}      style={btn('#3498db')}>🍪 Cookies</button>
-          <button onClick={handleShowUser}         style={btn('#8e44ad')}>👤 User</button>
-          <button onClick={handleCheckHealth}      style={btn('#27ae60')}>🏥 BFF Health</button>
-          <button onClick={handleCheckAuthService} style={btn('#16a085')}>🔐 Auth Test</button>
-          <button onClick={handleCheckSSO}         style={btn('#d35400')}>🔄 SSO Test</button>
+          <button onClick={handleShowCookies}      style={btn('#3498db')}>Cookies</button>
+          <button onClick={handleShowUser}         style={btn('#8e44ad')}>User</button>
+          <button onClick={handleCheckHealth}      style={btn('#27ae60')}>BFF Health</button>
+          <button onClick={handleCheckAuthService} style={btn('#16a085')}>Auth Test</button>
+          <button onClick={handleCheckSSO}         style={btn('#d35400')}>SSO Test</button>
         </div>
       </section>
 
@@ -215,36 +214,36 @@ export function PiTestClient() {
         <h2 style={{ fontSize: '1rem', marginBottom: 8 }}>1. Authentication</h2>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <button onClick={handleAuth} disabled={authStatus === 'loading'} style={btn('#2c3e50')}>
-            {authStatus === 'loading' ? 'Authenticating…' : 'Authenticate with Pi'}
+            {authStatus === 'loading' ? 'Authenticating...' : 'Authenticate with Pi'}
           </button>
-          {username           && <span style={{ color: '#2a9a4e' }}>✅ @{username}</span>}
-          {authStatus === 'error' && <span style={{ color: '#c0392b' }}>❌ Auth failed</span>}
+          {username           && <span style={{ color: '#2a9a4e' }}>@{username}</span>}
+          {authStatus === 'error' && <span style={{ color: '#c0392b' }}>Auth failed</span>}
         </div>
       </section>
 
       <section style={{ marginBottom: 16, padding: '12px 16px', border: '1px solid #e67e22', borderRadius: 8 }}>
-        <h2 style={{ fontSize: '1rem', marginBottom: 8, color: '#e67e22' }}>⚠️ Pending Payments</h2>
+        <h2 style={{ fontSize: '1rem', marginBottom: 8, color: '#e67e22' }}>Pending Payments</h2>
         <button onClick={handleCancelPending} style={btn('#e67e22')}>Check &amp; Resolve</button>
       </section>
 
       <section style={{ marginBottom: 16, padding: '12px 16px', border: '1px solid #8e44ad', borderRadius: 8 }}>
-        <h2 style={{ fontSize: '1rem', marginBottom: 8 }}>2. Payment Test (1π)</h2>
+        <h2 style={{ fontSize: '1rem', marginBottom: 8 }}>2. Payment Test (1pi)</h2>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <button
             onClick={handlePayment}
             disabled={authStatus !== 'done' || payStatus === 'loading'}
             style={{ ...btn('#8e44ad'), opacity: authStatus !== 'done' ? 0.5 : 1 }}>
-            {payStatus === 'loading' ? 'Processing…' : 'Pay 1π (test)'}
+            {payStatus === 'loading' ? 'Processing...' : 'Pay 1pi (test)'}
           </button>
-          {payStatus === 'done'      && <span style={{ color: '#2a9a4e' }}>✅ Complete!</span>}
-          {payStatus === 'cancelled' && <span style={{ color: '#e67e22' }}>⚠️ Cancelled</span>}
-          {payStatus === 'error'     && <span style={{ color: '#c0392b' }}>❌ Error</span>}
+          {payStatus === 'done'      && <span style={{ color: '#2a9a4e' }}>Complete!</span>}
+          {payStatus === 'cancelled' && <span style={{ color: '#e67e22' }}>Cancelled</span>}
+          {payStatus === 'error'     && <span style={{ color: '#c0392b' }}>Error</span>}
         </div>
       </section>
 
       <section>
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8, gap: 12 }}>
-          <h2 style={{ fontSize: '1rem', margin: 0 }}>📋 Logs ({logs.length})</h2>
+          <h2 style={{ fontSize: '1rem', margin: 0 }}>Logs ({logs.length})</h2>
           <button onClick={clearLogs} style={{ fontSize: '0.75rem', padding: '2px 8px', cursor: 'pointer' }}>Clear</button>
         </div>
         <div style={{
@@ -253,7 +252,7 @@ export function PiTestClient() {
           fontSize: '0.76rem', lineHeight: 1.7,
         }}>
           {logs.length === 0 ? (
-            <span style={{ color: '#888' }}>— no events yet —</span>
+            <span style={{ color: '#888' }}>no events yet</span>
           ) : (
             logs.map((e, i) => (
               <div key={i} style={{

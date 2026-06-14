@@ -197,7 +197,7 @@ const handleIncompletePayment = (payment: unknown): void => {
 const resolveIncompleteAfterLogin = async (piPaymentId: string): Promise<void> => {
   const csrfToken = getCsrfToken();
   try {
-    const res = await fetch('/api/payment/resolve-incomplete', {
+    const res = await fetch('/api/bff/payment/resolve-incomplete', {
       method: 'POST', credentials: 'include',
       headers: { 'Content-Type': 'application/json', 'x-csrf-token': csrfToken },
       body: JSON.stringify({ pi_payment_id: piPaymentId }),

@@ -34,7 +34,7 @@ export const createU2APayment = (
     const callbacks: PiPaymentCallbacks = {
       onReadyForServerApproval: async (paymentId: string) => {
         try {
-          const res = await fetch('/api/payment/approve', {
+          const res = await fetch('/api/bff/payment/approve', {
             method:      'POST',
             credentials: 'include',
             headers: {
@@ -63,7 +63,7 @@ export const createU2APayment = (
         try {
           const dbPaymentId = (getW().__tec_payment_id as string) ?? paymentId;
 
-          const res = await fetch('/api/payment/complete', {
+          const res = await fetch('/api/bff/payment/complete', {
             method:      'POST',
             credentials: 'include',
             headers: {
