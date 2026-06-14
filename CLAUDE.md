@@ -1,4 +1,4 @@
-> ⚡ **SESSION START — أول حاجة:** اقرأ `knowledge-base/C-02___CURRENT_STATE_.md` من `yasira82/tec-knowledge-base` (branch: `claude/gifted-knuth-1yhom3`) — ده مصدر الحقيقة للوضع الحالي. لا تعتمد على الذاكرة أو الملخص.
+> ⚡ **SESSION START — أول حاجة:** اقرأ `knowledge-base/C-02___CURRENT_STATE_.md` من `yasira82/tec-knowledge-base` (branch: `main`) — ده مصدر الحقيقة للوضع الحالي. لا تعتمد على الذاكرة أو الملخص.
 
 ---
 
@@ -62,11 +62,6 @@ Never trust client-sent merchant IDs — always derive from the authenticated se
 - Hub navigation → Force Mode 1 (never attempt Mode 2)
 - Client-sent merchantId without session verification → REJECT
 
-### Canonical Entities in Commerce
-- **Order** owned by: `tec-commerce-service` — only service may transition order state
-- **Subscription** owned by: `tec-commerce-service`
-- **Payment** owned by: `tec-payment-service` — commerce NEVER creates payments directly
-
 ### Invariants for Commerce
 ```
 1. Order not created until payment approved
@@ -78,8 +73,8 @@ Never trust client-sent merchant IDs — always derive from the authenticated se
 
 ### Forbidden in Commerce
 ```
-- body.merchantId to derive merchant identity (FORBIDDEN — Policy CI blocks body.userId)
-- Direct payment creation from commerce service (go through payment-service)
+- body.merchantId to derive merchant identity (FORBIDDEN)
+- Direct payment creation from commerce service
 - Transitioning order from terminal state
 ```
 
@@ -119,31 +114,11 @@ style(commerce): UI polish
 
 ---
 
-## Phase 0 Items (C-41 — Before Mainnet)
+## Pi App Identity
 
-```
-□ Write Vitest tests — target ≥ 60%    ← NEXT priority
-□ Document Pi App ID + domain (tec-commerce → tecosystem.app/commerce)
-□ Upgrade to @yasser172/tec-ui PaymentModal when v1.2.0 publishes
-□ PI_SANDBOX=false verified in production
-□ Analytics connection to tec-analytics-service
-```
-
-### Test Coverage Targets (Phase 0 gate — target ≥ 60%)
-| File | Priority | Scenarios |
-|------|----------|-----------|
-| Merchant auth guard | HIGH | missing cookie, valid merchant, wrong role |
-| Payment handler (ADR-007) | HIGH | isHubNavigation true/false, piReady false, success |
-| Order creation flow | HIGH | success, payment_id mismatch, duplicate order |
-| BFF routes (products, orders) | MEDIUM | auth fail, gateway error, pagination |
-
----
-
-## Platform Orchestra — This Repo
-
-**Role:** Transaction Layer — merchant dashboard, order management, revenue analytics
-**Upstream:** @yasser172/tec-auth · @yasser172/tec-ui · @yasser172/tec-sdk · tec-commerce-service (4003)
-**Layer:** Phase 0 hardening
+| App | Pi App ID | Domain |
+|-----|-----------|--------|
+| Tec-Commerce | `commerce-app-68aa99081fc1897a` | `https://tec-commerce-app.vercel.app` |
 
 ---
 
@@ -152,20 +127,15 @@ style(commerce): UI polish
 ### "Merchant sees another merchant's orders"
 ```
 Symptom: Merchant dashboard shows orders not belonging to them.
-Cause:   Merchant identity derived from request body (merchantId from client).
-         Policy CI blocks body.userId/merchantId — this is a P0 security issue.
+Cause:   Merchant identity derived from request body.
 Fix:     ALWAYS derive merchant identity from tec_user cookie (server-side only).
-         Never trust client-sent merchantId — verify from authenticated session.
 ```
 
 ### "Order stuck in 'pending' after Pi payment completes"
 ```
-Symptom: Pi payment succeeds (user gets confirmation) but order not created.
+Symptom: Pi payment succeeds but order not created.
 Cause:   POST /api/bff/orders not called after payment completion.
-         Or: payment_id not passed correctly in the order payload.
 Fix:     Verify onReadyForServerCompletion callback calls POST /api/bff/orders.
-         Payload must include: { items: [{productId, qty}], payment_id }.
-         Check tec-commerce-service logs for order creation errors.
 ```
 
 ---
@@ -174,10 +144,9 @@ Fix:     Verify onReadyForServerCompletion callback calls POST /api/bff/orders.
 
 | # | Risk | Severity | Mitigation |
 |---|------|----------|------------|
-| R1 | Merchant ID spoofing via request body | P0 | NEVER trust client-sent merchant IDs — session only |
+| R1 | Merchant ID spoofing via request body | P0 | NEVER trust client-sent merchant IDs |
 | R2 | Hub→Commerce payment failure (C-76) | P0 | `isHubNavigation()` → Mode 1 — DO NOT REMOVE |
-| R3 | INTERNAL_SECRET missing (NEW-B) | BLOCKING | Ops fix — blocks production commerce |
-| R4 | Railway URL in client bundle | P1 | server-only `API_GATEWAY_URL` |
+| R3 | Railway URL in client bundle | P1 | server-only `API_GATEWAY_URL` |
 
 ---
 
@@ -193,7 +162,8 @@ git status            # clean
 ---
 
 ## Knowledge Base Reference
-→ `yasira82/tec-knowledge-base` (branch: `claude/gifted-knuth-1yhom3`)
+
+→ `yasira82/tec-knowledge-base` (branch: `main`)
 → **Current State: `knowledge-base/C-02___CURRENT_STATE_.md`** — اقرأه أول كل session
 → Master index: `knowledge-base/C-57___MASTER_CONTENTS_INDEX.md`
 → Domain ownership matrix: `knowledge-base/C-68___DOMAIN_OWNERSHIP_MATRIX.md`
