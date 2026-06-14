@@ -78,7 +78,7 @@ describe('Commerce Page', () => {
     delete (window as any).__TEC_PI_READY;
   });
 
-  // ── TIER 1: Auth ──────────────────────────────────────────────────────
+  // ── TIER 1: Auth ────────────────────────────────────────────────────────────────────
 
   it('يعمل redirect لـ SSO لو مفيش token ومش authenticated', async () => {
     (usePiAuth as any).mockReturnValue({
@@ -103,7 +103,7 @@ describe('Commerce Page', () => {
     expect(screen.getByTestId('skeleton')).toBeDefined();
   });
 
-  // ── TIER 1: Payment Success ───────────────────────────────────────────
+  // ── TIER 1: Payment Success ─────────────────────────────────────────────────────
 
   it('لما payment_status=success → يعمل POST order', async () => {
     Object.defineProperty(window, 'location', {
@@ -159,7 +159,7 @@ describe('Commerce Page', () => {
     });
   });
 
-  // ── TIER 1: CSRF ──────────────────────────────────────────────────────
+  // ── TIER 1: CSRF ────────────────────────────────────────────────────────────────────
 
   it('POST order يحمل x-csrf-token', async () => {
     Object.defineProperty(document, 'cookie', {
@@ -217,7 +217,7 @@ describe('Commerce Page', () => {
     await waitFor(() => { expect(deleteCalled).toBe(true); });
   });
 
-  // ── TIER 1: handleBuy ─────────────────────────────────────────────────
+  // ── TIER 1: handleBuy ────────────────────────────────────────────────────────────────────
 
   it('handleBuy يكالل Pi.createPayment مع amount صح', async () => {
     // ADR-007: piReady must be true for Mode 2 to execute
@@ -264,7 +264,7 @@ describe('Commerce Page', () => {
     expect(window.location.href).toContain('hub.tecosystem.app/hub?pay=1');
   });
 
-  // ── TIER 2: 401 Retry ─────────────────────────────────────────────────
+  // ── TIER 2: 401 Retry ────────────────────────────────────────────────────────────────────
 
   it('fetchProducts يعمل retry بعد 401', async () => {
     let productsCalled = 0;

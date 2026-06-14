@@ -10,31 +10,12 @@ function timestamp() {
   return new Date().toISOString().replace('T', ' ').slice(0, 23);
 }
 
-const SERVICES = [
-  { name: 'Gateway',      url: 'https://api-gateway-production-6a68.up.railway.app/health'              },
-  { name: 'Auth',         url: 'https://auth-service-pi.up.railway.app/health'                          },
-  { name: 'Wallet',       url: 'https://wallet-service-production-445d.up.railway.app/health'           },
-  { name: 'Payment',      url: 'https://payment-service-production-90e5.up.railway.app/health'          },
-  { name: 'Commerce',     url: 'https://commerce-service-production.up.railway.app/health'              },
-  { name: 'Asset',        url: 'https://asset-service-production-54c4.up.railway.app/health'            },
-  { name: 'Notification', url: 'https://notification-service-production-dc81.up.railway.app/health'     },
-  { name: 'KYC',          url: 'https://kyc-service-production-ba73.up.railway.app/health'              },
-  { name: 'Identity',     url: 'https://identity-service-production-fe57.up.railway.app/health'         },
-  { name: 'Storage',      url: 'https://storage-sevice-production.up.railway.app/health'                },
-  { name: 'Realtime',     url: 'https://realtime-service-production-9630.up.railway.app/health'         },
-  { name: 'Analytics',    url: 'https://analytics-service-production-c310.up.railway.app/health'        },
-];
-
-type ServiceStatus = { name: string; status: 'checking' | 'ok' | 'error'; ms?: number };
-
 export function PiTestClient() {
-  const [logs,           setLogs]           = useState<LogEntry[]>([]);
-  const [authStatus,     setAuthStatus]     = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
-  const [payStatus,      setPayStatus]      = useState<'idle' | 'loading' | 'done' | 'error' | 'cancelled'>('idle');
-  const [username,       setUsername]       = useState<string | null>(null);
-  const [sdkReady,       setSdkReady]       = useState<boolean | null>(null);
-  const [services,       setServices]       = useState<ServiceStatus[]>([]);
-  const [checkingAll,    setCheckingAll]    = useState(false);
+  const [logs,       setLogs]       = useState<LogEntry[]>([]);
+  const [authStatus, setAuthStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+  const [payStatus,  setPayStatus]  = useState<'idle' | 'loading' | 'done' | 'error' | 'cancelled'>('idle');
+  const [username,   setUsername]   = useState<string | null>(null);
+  const [sdkReady,   setSdkReady]   = useState<boolean | null>(null);
 
   const log = useCallback((type: LogEntry['type'], msg: string) => {
     setLogs(prev => [...prev, { ts: timestamp(), type, msg }]);
@@ -72,40 +53,6 @@ export function PiTestClient() {
     }
   }, [log]);
 
-  // ── Services Health Check ─────────────────────────────────
-  const checkAllServices = useCallback(async () => {
-    setCheckingAll(true);
-    setServices(SERVICES.map(s => ({ name: s.name, status: 'checking' })));
-    log('info', 'Checking all 12 services...');
-
-    await Promise.all(SERVICES.map(async (s, i) => {
-      const start = Date.now();
-      try {
-        const res = await fetch(s.url, { cache: 'no-store', signal: AbortSignal.timeout(8000) });
-        const ms  = Date.now() - start;
-        const ok  = res.ok;
-        setServices(prev => {
-          const next = [...prev];
-          next[i] = { name: s.name, status: ok ? 'ok' : 'error', ms };
-          return next;
-        });
-        log(ok ? 'success' : 'error', `${s.name}: ${ok ? '✅' : '❌'} ${res.status} (${ms}ms)`);
-      } catch (err) {
-        const ms = Date.now() - start;
-        setServices(prev => {
-          const next = [...prev];
-          next[i] = { name: s.name, status: 'error', ms };
-          return next;
-        });
-        log('error', `${s.name}: ❌ ${String(err).slice(0, 50)} (${ms}ms)`);
-      }
-    }));
-
-    setCheckingAll(false);
-    log('info', 'Services check complete.');
-  }, [log]);
-
-  // ── Auth Test ─────────────────────────────────────────────
   const handleCheckAuthService = useCallback(async () => {
     log('info', 'Testing auth service via BFF...');
     try {
@@ -119,7 +66,6 @@ export function PiTestClient() {
     }
   }, [log]);
 
-  // ── SSO Test ─────────────────────────────────────────────
   const handleCheckSSO = useCallback(async () => {
     log('info', 'Testing SSO endpoint...');
     try {
@@ -202,30 +148,30 @@ export function PiTestClient() {
   }, [log]);
 
   const handlePayment = useCallback(async () => {
-  if (authStatus !== 'done') { log('warn', 'Authenticate first'); return; }
-  log('info', 'Creating payment (1π)…');
-  setPayStatus('loading');
-  try {
-    const result = await createU2APayment(
-      1,
-      'TEC Commerce test',
-      { source: 'pi-test-page' },
-    );
-    if (result.status === 'cancelled') {
-      setPayStatus('cancelled');
-      log('warn', `Cancelled (id: ${result.paymentId ?? 'n/a'})`);
-    } else if (result.status === 'completed') {
-      setPayStatus('done');
-      log('success', `✅ Done! id=${result.paymentId} txid=${result.txid}`);
-    } else {
+    if (authStatus !== 'done') { log('warn', 'Authenticate first'); return; }
+    log('info', 'Creating payment (1π)…');
+    setPayStatus('loading');
+    try {
+      const result = await createU2APayment(
+        1,
+        'TEC Commerce test',
+        { source: 'pi-test-page' },
+      );
+      if (result.status === 'cancelled') {
+        setPayStatus('cancelled');
+        log('warn', `Cancelled (id: ${result.paymentId ?? 'n/a'})`);
+      } else if (result.status === 'completed') {
+        setPayStatus('done');
+        log('success', `✅ Done! id=${result.paymentId} txid=${result.txid}`);
+      } else {
+        setPayStatus('error');
+        log('error', `Failed: ${result.message ?? 'unknown'}`);
+      }
+    } catch (err) {
       setPayStatus('error');
-      log('error', `Failed: ${result.message ?? 'unknown'}`);
+      log('error', `Payment error: ${err instanceof Error ? err.message : String(err)}`);
     }
-  } catch (err) {
-    setPayStatus('error');
-    log('error', `Payment error: ${err instanceof Error ? err.message : String(err)}`);
-  }
-}, [authStatus, log]);
+  }, [authStatus, log]);
 
   const clearLogs = () => setLogs([]);
 
@@ -237,12 +183,11 @@ export function PiTestClient() {
 
   return (
     <main style={{ fontFamily: 'monospace', maxWidth: 800, margin: '32px auto', padding: '0 16px' }}>
-      <h1 style={{ fontSize: '1.4rem', marginBottom: 4 }}>🥧 TEC Diagnostic Page</h1>
+      <h1 style={{ fontSize: '1.4rem', marginBottom: 4 }}>🥇 TEC Diagnostic Page</h1>
       <p style={{ fontSize: '0.82rem', color: '#666', marginBottom: 20 }}>
         Open inside <strong>Pi Browser</strong> · appId: <code>{process.env.NEXT_PUBLIC_PI_APP_ID ?? '(not set)'}</code>
       </p>
 
-      {/* SDK Status */}
       <div style={{
         marginBottom: 16, padding: '10px 14px', borderRadius: 6,
         background: sdkReady === null ? '#f5f5f5' : sdkReady ? '#e6f9ee' : '#fff0f0',
@@ -255,32 +200,6 @@ export function PiTestClient() {
         </span>
       </div>
 
-      {/* ── Services Status ── */}
-      <section style={{ marginBottom: 16, padding: '12px 16px', border: '1px solid #e74c3c', borderRadius: 8 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <h2 style={{ fontSize: '1rem', margin: 0, color: '#e74c3c' }}>🛰️ Services Health (12)</h2>
-          <button onClick={checkAllServices} disabled={checkingAll} style={btn('#e74c3c')}>
-            {checkingAll ? 'Checking...' : 'Check All Services'}
-          </button>
-        </div>
-        {services.length > 0 && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 6 }}>
-            {services.map(s => (
-              <div key={s.name} style={{
-                padding: '6px 10px', borderRadius: 6, fontSize: '0.78rem',
-                background: s.status === 'ok' ? '#e6f9ee' : s.status === 'error' ? '#fff0f0' : '#f5f5f5',
-                border: '1px solid ' + (s.status === 'ok' ? '#6dd68e' : s.status === 'error' ? '#f99' : '#ddd'),
-              }}>
-                <span>{s.status === 'ok' ? '✅' : s.status === 'error' ? '❌' : '⏳'}</span>{' '}
-                <strong>{s.name}</strong>
-                {s.ms !== undefined && <span style={{ color: '#888', marginLeft: 4 }}>{s.ms}ms</span>}
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* ── Debug Tools ── */}
       <section style={{ marginBottom: 16, padding: '12px 16px', border: '1px solid #3498db', borderRadius: 8 }}>
         <h2 style={{ fontSize: '1rem', marginBottom: 10, color: '#3498db' }}>🔍 Debug Tools</h2>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -292,25 +211,22 @@ export function PiTestClient() {
         </div>
       </section>
 
-      {/* ── Auth ── */}
       <section style={{ marginBottom: 16, padding: '12px 16px', border: '1px solid #2c3e50', borderRadius: 8 }}>
         <h2 style={{ fontSize: '1rem', marginBottom: 8 }}>1. Authentication</h2>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <button onClick={handleAuth} disabled={authStatus === 'loading'} style={btn('#2c3e50')}>
             {authStatus === 'loading' ? 'Authenticating…' : 'Authenticate with Pi'}
           </button>
-          {username          && <span style={{ color: '#2a9a4e' }}>✅ @{username}</span>}
+          {username           && <span style={{ color: '#2a9a4e' }}>✅ @{username}</span>}
           {authStatus === 'error' && <span style={{ color: '#c0392b' }}>❌ Auth failed</span>}
         </div>
       </section>
 
-      {/* ── Pending Payments ── */}
       <section style={{ marginBottom: 16, padding: '12px 16px', border: '1px solid #e67e22', borderRadius: 8 }}>
         <h2 style={{ fontSize: '1rem', marginBottom: 8, color: '#e67e22' }}>⚠️ Pending Payments</h2>
-        <button onClick={handleCancelPending} style={btn('#e67e22')}>Check & Resolve</button>
+        <button onClick={handleCancelPending} style={btn('#e67e22')}>Check &amp; Resolve</button>
       </section>
 
-      {/* ── Payment Test ── */}
       <section style={{ marginBottom: 16, padding: '12px 16px', border: '1px solid #8e44ad', borderRadius: 8 }}>
         <h2 style={{ fontSize: '1rem', marginBottom: 8 }}>2. Payment Test (1π)</h2>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -326,7 +242,6 @@ export function PiTestClient() {
         </div>
       </section>
 
-      {/* ── Logs ── */}
       <section>
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8, gap: 12 }}>
           <h2 style={{ fontSize: '1rem', margin: 0 }}>📋 Logs ({logs.length})</h2>
@@ -356,4 +271,4 @@ export function PiTestClient() {
       </section>
     </main>
   );
-             }
+}
