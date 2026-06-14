@@ -24,6 +24,11 @@ const getCsrfToken = (): string =>
   typeof document === 'undefined' ? '' :
   document.cookie.split('; ').find(r => r.startsWith('tec_csrf='))?.split('=')?.[1] ?? '';
 
+// ADR-007: check Hub navigation BEFORE any Pi SDK call
+const isHubNavigation = (): boolean =>
+  typeof document !== 'undefined' &&
+  document.referrer.toLowerCase().includes('hub.tecosystem.app');
+
 const getTokenFromCookie = (): string | null =>
   typeof document === 'undefined' ? null :
   document.cookie.split('; ').find(r => r.startsWith('tec_access_token='))?.split('=')?.[1] ?? null;
@@ -56,7 +61,6 @@ function CommercePageInner() {
 
   useEffect(() => { setPrefs(loadPrefs()); }, []);
 
-  // ── Pi SDK ready ✅ ────────────────────────────────────────
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if ((window as any).__TEC_PI_READY) { setPiReady(true); return; }
@@ -65,7 +69,6 @@ function CommercePageInner() {
     return () => window.removeEventListener('tec-pi-ready', h);
   }, []);
 
-  // ── Re-authenticate Pi for Commerce session ✅ ─────────────
   useEffect(() => {
     if (!piReady || (window as any).__TEC_PI_FOREIGN_SESSION) return;
     window.Pi?.authenticate(['username'], () => {}).catch(() => {});
@@ -149,86 +152,79 @@ function CommercePageInner() {
           method: 'POST', credentials: 'include',
           headers: { 'Content-Type': 'application/json', 'x-csrf-token': getCsrfToken() },
           body: JSON.stringify({ product_id: productId, payment_id: paymentId, txid }),
-        }).then(() => fetchOrders()).catch(() => {});
+        }).then(() => fetchOrders()).catch((err) => {
+          console.error('[commerce] order creation failed after Hub redirect:', err);
+        });
       }
       window.history.replaceState({}, '', '/app');
     }
   }, [isLoading, isAuthenticated, showToast, fetchOrders]);
 
-  // ── handleBuy ✅ ───────────────────────────────────────────
+  // ADR-007 compliant handleBuy
   const handleBuy = useCallback(async (product: Product) => {
-  if (!window.Pi)       { showToast('Open in Pi Browser to pay', 'error'); return; }
-  if (!piReady)         { showToast('Pi SDK still loading...', 'error'); return; }
-  if (inFlight.current) return;
+    if (inFlight.current) return;
+    const amount = product.price + (product.shipping?.shippingCost ?? 0);
 
-  const amount = product.price + (product.shipping?.shippingCost ?? 0);
-
-  // ✅ اختبر Pi SDK أولاً — قبل أي payment record
-  const piWorks = await (async () => {
-    try {
-      await window.Pi.authenticate(['username'], () => {});
-      return true;
-    } catch { return false; }
-  })();
-
-  if (!piWorks) {
-    // ✅ Pi SDK = Hub's session → Hub PaymentModal
-    const params = new URLSearchParams({
-      pay:        '1',
-      amount:     String(amount),
-      memo:       `Buy ${product.title} — TEC Commerce`,
-      product_id: product.id,
-      source:     'commerce',
-      return_url: `${COMMERCE_URL}/app`,
-    });
-    window.location.href = `${HUB_URL}/hub?${params}`;
-    return;
-  }
-
-  // ✅ Commerce Session → Direct Payment
-  inFlight.current = true;
-  setActiveProd(product);
-  setPayStatus('creating');
-  setPayMessage('');
-
-  try {
-    const memo       = `Buy ${product.title} — TEC Commerce`;
-    const internalId = await createPaymentRecord(amount, product.id, memo);
-
-    if (!internalId) {
-      setPayStatus('error');
-      setPayMessage('Failed to initialize payment.');
-      inFlight.current = false;
+    // ADR-007: check Hub navigation FIRST — before any Pi SDK call
+    if (isHubNavigation() || !(window as any).Pi || !piReady) {
+      const params = new URLSearchParams({
+        pay:        '1',
+        amount:     String(amount),
+        memo:       `Buy ${product.title} — TEC Commerce`,
+        product_id: product.id,
+        source:     'commerce',
+        return_url: `${COMMERCE_URL}/app`,
+      });
+      window.location.href = `${HUB_URL}/hub?${params}`;
       return;
     }
 
-    setPayStatus('paying');
+    // Mode 2: Direct payment (Commerce session)
+    inFlight.current = true;
+    setActiveProd(product);
+    setPayStatus('creating');
+    setPayMessage('');
 
-    const result = await createU2APayment(
-      amount, memo,
-      { source: 'commerce', product_id: product.id },
-      internalId,
-    );
+    try {
+      const memo       = `Buy ${product.title} — TEC Commerce`;
+      const internalId = await createPaymentRecord(amount, product.id, memo);
 
-    if (result.success) {
-      fetch('/api/bff/commerce/orders', {
-        method: 'POST', credentials: 'include',
-        headers: { 'Content-Type': 'application/json', 'x-csrf-token': getCsrfToken() },
-        body: JSON.stringify({ product_id: product.id, payment_id: internalId }),
-      }).then(() => fetchOrders()).catch(() => {});
-      setPayStatus('success');
-      showToast('Payment successful! 🎉');
-    } else {
-      setPayStatus(result.status === 'cancelled' ? 'cancelled' : 'error');
-      setPayMessage(result.message ?? '');
+      if (!internalId) {
+        setPayStatus('error');
+        setPayMessage('Failed to initialize payment.');
+        inFlight.current = false;
+        return;
+      }
+
+      setPayStatus('paying');
+
+      const result = await createU2APayment(
+        amount, memo,
+        { source: 'commerce', product_id: product.id },
+        internalId,
+      );
+
+      if (result.success) {
+        fetch('/api/bff/commerce/orders', {
+          method: 'POST', credentials: 'include',
+          headers: { 'Content-Type': 'application/json', 'x-csrf-token': getCsrfToken() },
+          body: JSON.stringify({ product_id: product.id, payment_id: internalId }),
+        }).then(() => fetchOrders()).catch((err) => {
+          console.error('[commerce] order creation failed:', err);
+        });
+        setPayStatus('success');
+        showToast('Payment successful! 🎉');
+      } else {
+        setPayStatus(result.status === 'cancelled' ? 'cancelled' : 'error');
+        setPayMessage(result.message ?? '');
+      }
+    } catch (err) {
+      setPayStatus('error');
+      setPayMessage(err instanceof Error ? err.message : 'Payment failed');
+    } finally {
+      inFlight.current = false;
     }
-  } catch (err) {
-    setPayStatus('error');
-    setPayMessage(err instanceof Error ? err.message : 'Payment failed');
-  } finally {
-    inFlight.current = false;
-  }
-}, [showToast, fetchOrders, piReady]);
+  }, [showToast, fetchOrders, piReady]);
 
   const closePayModal = () => {
     setPayStatus('idle');
@@ -498,4 +494,4 @@ function CommercePageInner() {
 
 export default function CommercePage() {
   return <ErrorBoundary><CommercePageInner /></ErrorBoundary>;
-      }
+}

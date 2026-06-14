@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 
-const GW = process.env.API_GATEWAY_URL ?? 'https://api-gateway-production-6a68.up.railway.app';
+const GW = process.env.API_GATEWAY_URL ?? process.env.NEXT_PUBLIC_API_GATEWAY_URL ?? '';
+
+const CreateSchema = z.object({
+  amount:     z.number().positive(),
+  product_id: z.string().min(1),
+  memo:       z.string().optional(),
+});
 
 const getUserId = (req: NextRequest): string => {
   try {
@@ -11,13 +18,19 @@ const getUserId = (req: NextRequest): string => {
 };
 
 export async function POST(req: NextRequest) {
+  if (!GW) return NextResponse.json({ error: 'Gateway not configured' }, { status: 503 });
+
   const token = req.cookies.get('tec_access_token')?.value;
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const userId = getUserId(req);
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const body = await req.json().catch(() => ({}));
+  const raw    = await req.json().catch(() => ({}));
+  const parsed = CreateSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'VALIDATION_ERROR', details: parsed.error.flatten() }, { status: 400 });
+  }
 
   const res = await fetch(`${GW}/api/payment/create`, {
     method:  'POST',
@@ -25,16 +38,17 @@ export async function POST(req: NextRequest) {
       'Content-Type':    'application/json',
       Authorization:     `Bearer ${token}`,
       'Idempotency-Key': crypto.randomUUID(),
+      'x-internal-key':  process.env.INTERNAL_SECRET ?? '',
     },
     body: JSON.stringify({
       userId,
-      amount:         body.amount,
+      amount:         parsed.data.amount,
       currency:       'PI',
       payment_method: 'pi',
       metadata: {
         source:     'commerce',
-        product_id: body.product_id,
-        memo:       body.memo,
+        product_id: parsed.data.product_id,
+        memo:       parsed.data.memo ?? '',
       },
     }),
   });
