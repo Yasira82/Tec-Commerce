@@ -73,7 +73,10 @@ describe('Commerce Page', () => {
     });
   });
 
-  afterEach(() => { delete (window as any).Pi; });
+  afterEach(() => {
+    delete (window as any).Pi;
+    delete (window as any).__TEC_PI_READY;
+  });
 
   // ── TIER 1: Auth ──────────────────────────────────────────────────────
 
@@ -209,7 +212,6 @@ describe('Commerce Page', () => {
 
     const { default: CommercePage } = await import('../page');
     render(React.createElement(CommercePage));
-    // ✅ ننتظر الـ button نفسه — مش products-tab اللي بيظهر فوراً وهو فاضي
     await waitFor(() => screen.getByTestId('delete-prod-1'));
     await act(async () => { screen.getByTestId('delete-prod-1').click(); });
     await waitFor(() => { expect(deleteCalled).toBe(true); });
@@ -217,48 +219,50 @@ describe('Commerce Page', () => {
 
   // ── TIER 1: handleBuy ─────────────────────────────────────────────────
 
-  // ── TIER 1: handleBuy ─────────────────────────────────────────────────
+  it('handleBuy يكالل Pi.createPayment مع amount صح', async () => {
+    // ADR-007: piReady must be true for Mode 2 to execute
+    // Set __TEC_PI_READY before render so the useEffect picks it up
+    (window as any).__TEC_PI_READY = true;
+    const createPayment = vi.fn();
+    (window as any).Pi = {
+      authenticate: vi.fn((_scopes: string[], _cb: Function) => Promise.resolve()),
+      createPayment,
+    };
 
-it('handleBuy يكالل Pi.createPayment مع amount صح', async () => {
-  const createPayment = vi.fn();
-  (window as any).Pi = {
-    authenticate: vi.fn((_scopes: string[], _cb: Function) => Promise.resolve()),
-    createPayment,
-  };
+    vi.doMock('@/lib/pi-payment', () => ({
+      createPaymentRecord: vi.fn().mockResolvedValue('internal-pay-id'),
+      createU2APayment:    vi.fn().mockResolvedValue({ status: 'completed', success: true, paymentId: 'p1', txid: 'tx1' }),
+    }));
 
-  // mock @/lib/pi-payment
-  vi.doMock('@/lib/pi-payment', () => ({
-    createPaymentRecord: vi.fn().mockResolvedValue('internal-pay-id'),
-    createU2APayment:    vi.fn().mockResolvedValue({ status: 'completed', success: true, paymentId: 'p1', txid: 'tx1' }),
-  }));
+    mockFetch({
+      '/api/bff/commerce/products': { ok: true, data: { products: [mockProduct] } },
+      '/api/bff/commerce/orders':   { ok: true, data: { orders: [] } },
+      '/api/bff/payment/create':    { ok: true, data: { data: { payment: { id: 'internal-pay-id' } } } },
+    });
 
-  mockFetch({
-    '/api/bff/commerce/products': { ok: true, data: { products: [mockProduct] } },
-    '/api/bff/commerce/orders':   { ok: true, data: { orders: [] } },
-    '/api/bff/payment/create':    { ok: true, data: { data: { payment: { id: 'internal-pay-id' } } } },
+    const { default: CommercePage } = await import('../page');
+    render(React.createElement(CommercePage));
+    await waitFor(() => screen.getByTestId('buy-prod-1'));
+    await act(async () => { screen.getByTestId('buy-prod-1').click(); });
+
+    // ✅ piReady=true + window.Pi present → Mode 2 (no Hub redirect)
+    expect(window.location.href).not.toContain('hub.tecosystem.app/hub');
   });
 
-  const { default: CommercePage } = await import('../page');
-  render(React.createElement(CommercePage));
-  await waitFor(() => screen.getByTestId('buy-prod-1'));
-  await act(async () => { screen.getByTestId('buy-prod-1').click(); });
-
-  // ✅ مش بيروح Hub تاني — بيكالل Pi.createPayment مباشرة
-  expect(window.location.href).not.toContain('hub.tecosystem.app/hub');
-});
-
-it('handleBuy يوقف لو Pi مش موجود', async () => {
-  delete (window as any).Pi;
-  mockFetch({
-    '/api/bff/commerce/products': { ok: true, data: { products: [mockProduct] } },
-    '/api/bff/commerce/orders':   { ok: true, data: { orders: [] } },
+  it('handleBuy يعمل redirect للـ Hub (Mode 1) لو Pi مش موجود — ADR-007', async () => {
+    // ADR-007: missing Pi SDK → Mode 1 Hub redirect (never silent fail)
+    delete (window as any).Pi;
+    mockFetch({
+      '/api/bff/commerce/products': { ok: true, data: { products: [mockProduct] } },
+      '/api/bff/commerce/orders':   { ok: true, data: { orders: [] } },
+    });
+    const { default: CommercePage } = await import('../page');
+    render(React.createElement(CommercePage));
+    await waitFor(() => screen.getByTestId('buy-prod-1'));
+    await act(async () => { screen.getByTestId('buy-prod-1').click(); });
+    // ADR-007 Mode 1: redirect to Hub when Pi SDK unavailable
+    expect(window.location.href).toContain('hub.tecosystem.app/hub?pay=1');
   });
-  const { default: CommercePage } = await import('../page');
-  render(React.createElement(CommercePage));
-  await waitFor(() => screen.getByTestId('buy-prod-1'));
-  await act(async () => { screen.getByTestId('buy-prod-1').click(); });
-  expect(window.location.href).toBe('');
-});
 
   // ── TIER 2: 401 Retry ─────────────────────────────────────────────────
 
