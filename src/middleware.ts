@@ -5,12 +5,11 @@ const CSRF_SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 const CSRF_PROTECTED    = [
   '/api/auth/logout',
   '/api/auth/refresh',
-  '/api/bff/commerce/',
-  '/api/bff/marketplace/',
+  '/api/bff/commerce',
+  '/api/bff/marketplace',
+  '/api/bff/payment',
+  '/api/bff/storage',
 ];
-
-// Payment routes excluded — JWT + Idempotency-Key provide equivalent protection (ADR-007, C-76)
-const CSRF_EXCLUDED = ['/api/bff/payment/'];
 
 function timingSafeStringEqual(a: string, b: string): boolean {
   const aBytes = new TextEncoder().encode(a);
@@ -36,8 +35,7 @@ export function middleware(req: NextRequest) {
   }
 
   if (!CSRF_SAFE_METHODS.has(method)) {
-    const isExcluded      = CSRF_EXCLUDED.some(r => pathname.startsWith(r));
-    const isCsrfProtected = !isExcluded && CSRF_PROTECTED.some(r => pathname.startsWith(r));
+    const isCsrfProtected = CSRF_PROTECTED.some(r => pathname.startsWith(r));
 
     if (isCsrfProtected) {
       const csrfCookie = req.cookies.get('tec_csrf')?.value;
