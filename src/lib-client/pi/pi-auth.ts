@@ -87,6 +87,7 @@ export const refreshAccessToken = async (): Promise<string | null> => {
     const res = await fetch('/api/auth/refresh', {
       method:      'POST',
       credentials: 'include',
+      headers: { 'x-csrf-token': getCsrfToken() },
     });
     if (!res.ok) {
       await logout();
@@ -113,18 +114,29 @@ export const fetchWithAuth = async (
   url: string,
   options: RequestInit = {}
 ): Promise<Response> => {
+  const method = (options.method ?? 'GET').toUpperCase();
+  const needsCsrf = method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS';
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(needsCsrf ? { 'x-csrf-token': getCsrfToken() } : {}),
+    ...(options.headers as Record<string, string> ?? {}),
+  };
   const res = await fetch(url, {
     ...options,
     credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers as Record<string, string> ?? {}),
-    },
+    headers,
   });
   if (res.status === 401) {
     const newToken = await refreshAccessToken();
     if (!newToken) return res;
-    return fetch(url, { ...options, credentials: 'include' });
+    return fetch(url, {
+      ...options,
+      credentials: 'include',
+      headers: {
+        ...headers,
+        ...(needsCsrf ? { 'x-csrf-token': getCsrfToken() } : {}),
+      },
+    });
   }
   return res;
 };
