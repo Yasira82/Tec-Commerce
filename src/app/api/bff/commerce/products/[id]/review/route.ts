@@ -24,7 +24,7 @@ export const POST = createHandler({
           'Content-Type':   'application/json',
           Authorization:    `Bearer ${req.cookies.get('tec_access_token')?.value ?? ''}`,
           'x-request-id':   ctx.requestId,
-          'x-internal-key': process.env.INTERNAL_SECRET ?? '',
+          ...(process.env.INTERNAL_SECRET && { 'x-internal-key': process.env.INTERNAL_SECRET }),
         },
         body: JSON.stringify({
           rating:    input.rating,

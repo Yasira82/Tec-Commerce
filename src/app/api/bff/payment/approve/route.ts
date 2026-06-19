@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       'Content-Type':    'application/json',
       Authorization:     `Bearer ${token}`,
       'Idempotency-Key': crypto.randomUUID(),
-      'x-internal-key':  process.env.INTERNAL_SECRET ?? '',
+      ...(process.env.INTERNAL_SECRET && { 'x-internal-key': process.env.INTERNAL_SECRET }),
     },
     body: JSON.stringify(parsed.data),
   });
