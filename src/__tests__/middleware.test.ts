@@ -62,10 +62,9 @@ describe('middleware — CSRF', () => {
     expect(res.status).toBe(200);
   });
 
-  it('returns 403 when CSRF tokens missing on protected POST', () => {
+  it('allows POST when CSRF cookie is absent (cross-domain SSO)', () => {
     const res = middleware(makeReq({ path: '/api/bff/commerce/orders', method: 'POST' }));
-    expect(res.status).toBe(403);
-    // Can't call .json() on middleware response — just check status
+    expect(res.status).toBe(200);
   });
 
   it('passes when CSRF cookie matches header on protected POST', () => {
@@ -88,12 +87,12 @@ describe('middleware — CSRF', () => {
     expect(res.status).toBe(403);
   });
 
-  it('enforces CSRF on /api/bff/payment/ routes', () => {
+  it('allows /api/bff/payment/ POST when CSRF cookie absent (cross-domain SSO)', () => {
     const res = middleware(makeReq({
       path:   '/api/bff/payment/approve',
       method: 'POST',
     }));
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(200);
   });
 
   it('passes /api/bff/payment/ routes when CSRF token matches', () => {
