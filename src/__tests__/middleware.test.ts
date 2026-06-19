@@ -88,10 +88,20 @@ describe('middleware — CSRF', () => {
     expect(res.status).toBe(403);
   });
 
-  it('skips CSRF for /api/bff/payment/ routes (excluded)', () => {
+  it('enforces CSRF on /api/bff/payment/ routes', () => {
     const res = middleware(makeReq({
       path:   '/api/bff/payment/approve',
       method: 'POST',
+    }));
+    expect(res.status).toBe(403);
+  });
+
+  it('passes /api/bff/payment/ routes when CSRF token matches', () => {
+    const res = middleware(makeReq({
+      path:    '/api/bff/payment/approve',
+      method:  'POST',
+      cookies: { tec_csrf: 'csrf-tok' },
+      headers: { 'x-csrf-token': 'csrf-tok' },
     }));
     expect(res.status).toBe(200);
   });
