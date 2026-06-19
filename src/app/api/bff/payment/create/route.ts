@@ -4,7 +4,7 @@ import { z } from 'zod';
 const GW = process.env.API_GATEWAY_URL ?? '';
 
 const CreateSchema = z.object({
-  amount:     z.number().positive(),
+  amount:     z.coerce.number().positive(),
   product_id: z.string().min(1),
   memo:       z.string().optional(),
 });
