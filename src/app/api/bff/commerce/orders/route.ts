@@ -16,7 +16,7 @@ export const GET = createHandler({
         headers: {
           Authorization:    `Bearer ${req.cookies.get('tec_access_token')?.value ?? ''}`,
           'x-request-id':   ctx.requestId,
-          'x-internal-key': process.env.INTERNAL_SECRET ?? '',
+          ...(process.env.INTERNAL_SECRET && { 'x-internal-key': process.env.INTERNAL_SECRET }),
         },
         cache: 'no-store',
       },
@@ -36,7 +36,7 @@ export const POST = createHandler({
       'Content-Type':   'application/json',
       Authorization:    `Bearer ${req.cookies.get('tec_access_token')?.value ?? ''}`,
       'x-request-id':   ctx.requestId,
-      'x-internal-key': process.env.INTERNAL_SECRET ?? '',
+      ...(process.env.INTERNAL_SECRET && { 'x-internal-key': process.env.INTERNAL_SECRET }),
     };
 
     // ✅ بعت product_id + buyer_id + payment_id في request واحد
