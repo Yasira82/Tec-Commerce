@@ -104,6 +104,7 @@ describe('refreshAccessToken', () => {
     expect(fetchSpy).toHaveBeenCalledWith('/api/auth/refresh', {
       method: 'POST',
       credentials: 'include',
+      headers: { 'x-csrf-token': expect.any(String) },
     });
   });
 
