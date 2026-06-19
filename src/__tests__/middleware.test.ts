@@ -65,7 +65,6 @@ describe('middleware — CSRF', () => {
   it('returns 403 when CSRF tokens missing on protected POST', () => {
     const res = middleware(makeReq({ path: '/api/bff/commerce/orders', method: 'POST' }));
     expect(res.status).toBe(403);
-    // Can't call .json() on middleware response — just check status
   });
 
   it('passes when CSRF cookie matches header on protected POST', () => {
