@@ -23,7 +23,9 @@ const markJtiUsed = (jti: string): void => {
 export async function GET(req: NextRequest) {
   const token    = req.nextUrl.searchParams.get('token');
   // ✅ اقرأ الـ redirect param
-  const redirect = req.nextUrl.searchParams.get('redirect') ?? '/app';
+  const rawRedirect = req.nextUrl.searchParams.get('redirect') ?? '/app';
+  // Block open redirect: only same-origin absolute paths (no //host, no scheme)
+  const redirect = rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') ? rawRedirect : '/app';
 
   if (!token) return NextResponse.redirect(new URL('/app', req.url));
 
