@@ -55,6 +55,10 @@ jobs:
       - name: Install
         run: npm install --legacy-peer-deps
 
+      - name: Security audit (advisory)
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
       - name: Lint
         run: npm run lint
 
