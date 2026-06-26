@@ -12,8 +12,8 @@ interface Props {
   onEdit?:  (p: Product) => void;
 }
 
-const GOLD   = '#d4af37';
-const GOLD_D = '#b8882a';
+const GOLD   = '#FBBF24';
+const GOLD_D = '#F59E0B';
 
 function StarRating({ rating, count }: { rating: number; count: number }) {
   return (
@@ -73,8 +73,8 @@ export function ProductCard({ product, onBuy, isMine, onDelete, onEdit }: Props)
     <div
       onClick={() => !isMine && router.push(`/app/${product.id}`)}
       style={{
-        background: 'linear-gradient(180deg,#0f0f1a 0%,#0a0a12 100%)',
-        border: '1px solid rgba(212,175,55,0.12)',
+        background: 'linear-gradient(180deg,#0f0f1a 0%,#0B1020 100%)',
+        border: '1px solid rgba(251,191,36,0.12)',
         borderRadius: 20, overflow: 'hidden', marginBottom: 12,
         boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
         cursor: isMine ? 'default' : 'pointer',

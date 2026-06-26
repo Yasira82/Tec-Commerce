@@ -10,8 +10,8 @@ import { ErrorBoundary }   from '@/components/ErrorBoundary';
 // ── Theme Colors ──────────────────────────────────────────
 const THEMES = {
   dark: {
-    bg:      '#020205',
-    surface: '#0d0d14',
+    bg:      '#050816',
+    surface: '#0B1020',
     border:  '#ffffff08',
     text:    '#ffffff',
     subtext: '#6b6b7a',
@@ -33,7 +33,7 @@ function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) =>
     <button onClick={() => onChange(!value)}
       style={{
         width: 48, height: 28, borderRadius: 14,
-        background:  value ? 'linear-gradient(135deg,#d4af37,#b8882a)' : '#ffffff15',
+        background:  value ? 'linear-gradient(135deg,#FBBF24,#F59E0B)' : '#ffffff15',
         border:      'none', cursor: 'pointer',
         position:    'relative', transition: 'all 0.25s', flexShrink: 0,
       }}>
@@ -62,9 +62,9 @@ function Select<T extends string>({
           style={{
             padding: '6px 14px', borderRadius: 20,
             fontSize: 12, fontWeight: 600, cursor: 'pointer',
-            background: value === opt.value ? '#d4af3720' : '#ffffff08',
-            color:      value === opt.value ? '#d4af37'   : '#6b6b7a',
-            border:     value === opt.value ? '1px solid #d4af3740' : '1px solid transparent',
+            background: value === opt.value ? '#FBBF2420' : '#ffffff08',
+            color:      value === opt.value ? '#FBBF24'   : '#6b6b7a',
+            border:     value === opt.value ? '1px solid #FBBF2440' : '1px solid transparent',
             transition: 'all 0.2s',
           }}>
           {opt.label}
@@ -187,7 +187,7 @@ function SettingsPageInner() {
           style={{
             background: theme.surface, border: `1px solid ${theme.border}`,
             borderRadius: 10, padding: '6px 12px',
-            color: '#d4af37', fontSize: 14, cursor: 'pointer',
+            color: '#FBBF24', fontSize: 14, cursor: 'pointer',
           }}>
           {s.back}
         </button>
@@ -204,7 +204,7 @@ function SettingsPageInner() {
           <div style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: 16 }}>
             <div style={{
               width: 56, height: 56, borderRadius: '50%',
-              background: 'linear-gradient(135deg,#d4af37,#b8882a)',
+              background: 'linear-gradient(135deg,#FBBF24,#F59E0B)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 22, fontWeight: 900, color: '#0a0800', flexShrink: 0,
             }}>
@@ -311,7 +311,7 @@ function SettingsPageInner() {
             <span style={{ fontSize: 13, color: theme.subtext }}>assets.pi</span>
           </Row>
           <Row label={s.ecosystem} theme={theme}>
-            <span style={{ fontSize: 13, color: '#d4af37' }}>TEC · 24 Apps</span>
+            <span style={{ fontSize: 13, color: '#FBBF24' }}>TEC · 24 Apps</span>
           </Row>
           <Row label={s.builtOn} theme={theme}>
             <span style={{ fontSize: 13, color: theme.subtext }}>Pi Network</span>

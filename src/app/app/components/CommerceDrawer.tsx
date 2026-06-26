@@ -30,7 +30,7 @@ function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) =>
       style={{
         width: 44, height: 24, borderRadius: 12, position: 'relative',
         cursor: 'pointer', flexShrink: 0, border: 'none',
-        background: value ? 'linear-gradient(135deg,#d4af37,#b8882a)' : '#1a1a2a',
+        background: value ? 'linear-gradient(135deg,#FBBF24,#F59E0B)' : '#1a1a2a',
         transition: 'all 0.2s ease',
       }}>
       <div style={{
@@ -116,7 +116,7 @@ export function CommerceDrawer({ isOpen, onClose, prefs, onPrefChange, username,
     } catch {}
   };
 
-  const bg      = isDark ? '#0a0a12'  : '#f4f4f8';
+  const bg      = isDark ? '#0B1020'  : '#f4f4f8';
   const border  = isDark ? '#ffffff0a' : '#e0e0e8';
   const textPri = isDark ? '#fff'     : '#111';
 
@@ -142,9 +142,9 @@ export function CommerceDrawer({ isOpen, onClose, prefs, onPrefChange, username,
         <div style={{ padding: '20px 20px 16px', borderBottom: `1px solid ${border}` }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg,#d4af37,#b8882a)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: '#0a0800' }}>🛒</div>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg,#FBBF24,#F59E0B)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: '#0a0800' }}>🛒</div>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 800, color: '#d4af37' }}>Commerce</div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: '#FBBF24' }}>Commerce</div>
                 <div style={{ fontSize: 9, color: '#4a4a5a', letterSpacing: 2 }}>TEC ECOSYSTEM</div>
               </div>
             </div>
@@ -157,7 +157,7 @@ export function CommerceDrawer({ isOpen, onClose, prefs, onPrefChange, username,
           {/* User + Connection */}
           {username && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: isDark ? '#ffffff05' : '#e8e8f0', borderRadius: 12 }}>
-              <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,#d4af37,#b8882a)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 15, color: '#0a0800', flexShrink: 0 }}>
+              <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,#FBBF24,#F59E0B)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 15, color: '#0a0800', flexShrink: 0 }}>
                 {username[0].toUpperCase()}
               </div>
               <div style={{ flex: 1 }}>
@@ -187,10 +187,10 @@ export function CommerceDrawer({ isOpen, onClose, prefs, onPrefChange, username,
           {/* Language */}
           <DrawerRow isDark={isDark} icon="🌐" label={isAR ? 'اللغة' : 'Language'}
             right={
-              <div style={{ display: 'flex', background: isDark ? '#0d0d14' : '#e0e0e8', borderRadius: 10, overflow: 'hidden', border: `1px solid ${isDark ? '#ffffff10' : '#ccc'}` }}>
+              <div style={{ display: 'flex', background: isDark ? '#0B1020' : '#e0e0e8', borderRadius: 10, overflow: 'hidden', border: `1px solid ${isDark ? '#ffffff10' : '#ccc'}` }}>
                 {(['EN', 'AR'] as const).map(l => (
                   <button key={l} onClick={() => onPrefChange('language', l.toLowerCase())}
-                    style={{ padding: '5px 11px', background: prefs.language === l.toLowerCase() ? 'linear-gradient(135deg,#d4af37,#b8882a)' : 'transparent', border: 'none', color: prefs.language === l.toLowerCase() ? '#0a0800' : '#4a4a5a', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                    style={{ padding: '5px 11px', background: prefs.language === l.toLowerCase() ? 'linear-gradient(135deg,#FBBF24,#F59E0B)' : 'transparent', border: 'none', color: prefs.language === l.toLowerCase() ? '#0a0800' : '#4a4a5a', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
                     {l}
                   </button>
                 ))}
@@ -201,10 +201,10 @@ export function CommerceDrawer({ isOpen, onClose, prefs, onPrefChange, username,
           {/* Currency */}
           <DrawerRow isDark={isDark} icon="💵" label={isAR ? 'العملة' : 'Currency'}
             right={
-              <div style={{ display: 'flex', background: isDark ? '#0d0d14' : '#e0e0e8', borderRadius: 10, overflow: 'hidden', border: `1px solid ${isDark ? '#ffffff10' : '#ccc'}` }}>
+              <div style={{ display: 'flex', background: isDark ? '#0B1020' : '#e0e0e8', borderRadius: 10, overflow: 'hidden', border: `1px solid ${isDark ? '#ffffff10' : '#ccc'}` }}>
                 {(['PI', 'USD'] as const).map(c => (
                   <button key={c} onClick={() => onPrefChange('currency', c)}
-                    style={{ padding: '5px 11px', background: prefs.currency === c ? 'linear-gradient(135deg,#d4af37,#b8882a)' : 'transparent', border: 'none', color: prefs.currency === c ? '#0a0800' : '#4a4a5a', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                    style={{ padding: '5px 11px', background: prefs.currency === c ? 'linear-gradient(135deg,#FBBF24,#F59E0B)' : 'transparent', border: 'none', color: prefs.currency === c ? '#0a0800' : '#4a4a5a', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
                     {c}
                   </button>
                 ))}
@@ -214,9 +214,9 @@ export function CommerceDrawer({ isOpen, onClose, prefs, onPrefChange, username,
 
           {/* Pi Rate */}
           {isUSD && (
-            <div style={{ margin: '0 20px 4px', padding: '8px 12px', background: 'rgba(212,175,55,0.06)', border: '1px solid rgba(212,175,55,0.15)', borderRadius: 10 }}>
+            <div style={{ margin: '0 20px 4px', padding: '8px 12px', background: 'rgba(251,191,36,0.06)', border: '1px solid rgba(251,191,36,0.15)', borderRadius: 10 }}>
               <div style={{ fontSize: 10, color: '#4a4a5a' }}>{isAR ? 'السعر الحالي' : 'Current rate'}</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#d4af37' }}>1π ≈ ${piRate.toFixed(4)} USD</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#FBBF24' }}>1π ≈ ${piRate.toFixed(4)} USD</div>
             </div>
           )}
 
@@ -282,7 +282,7 @@ export function CommerceDrawer({ isOpen, onClose, prefs, onPrefChange, username,
         {/* ── Footer ──────────────────────────── */}
         <div style={{ padding: '16px 20px', borderTop: `1px solid ${border}` }}>
           <button onClick={() => { window.location.href = `${hubUrl}/hub`; }}
-            style={{ width: '100%', padding: '11px', borderRadius: 12, background: isDark ? '#ffffff08' : '#e0e0e8', border: `1px solid ${isDark ? '#ffffff10' : '#ccc'}`, color: '#d4af37', fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 12 }}>
+            style={{ width: '100%', padding: '11px', borderRadius: 12, background: isDark ? '#ffffff08' : '#e0e0e8', border: `1px solid ${isDark ? '#ffffff10' : '#ccc'}`, color: '#FBBF24', fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 12 }}>
             🔷 {isAR ? 'العودة للمركز' : 'Back to Hub'}
           </button>
 

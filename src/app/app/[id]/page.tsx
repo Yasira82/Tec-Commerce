@@ -42,7 +42,7 @@ function Gallery({ images, title }: { images: string[]; title: string }) {
           <div style={{ position: 'absolute', bottom: 14, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 6 }}>
             {images.map((_, i) => (
               <button key={i} onClick={() => setIdx(i)}
-                style={{ width: i === idx ? 20 : 7, height: 7, borderRadius: 4, background: i === idx ? '#d4af37' : 'rgba(255,255,255,0.35)', border: 'none', cursor: 'pointer', padding: 0, transition: 'all 0.2s' }} />
+                style={{ width: i === idx ? 20 : 7, height: 7, borderRadius: 4, background: i === idx ? '#FBBF24' : 'rgba(255,255,255,0.35)', border: 'none', cursor: 'pointer', padding: 0, transition: 'all 0.2s' }} />
             ))}
           </div>
           {idx > 0 && (
@@ -57,11 +57,11 @@ function Gallery({ images, title }: { images: string[]; title: string }) {
               ›
             </button>
           )}
-          <div style={{ display: 'flex', gap: 8, padding: '10px 16px', overflowX: 'auto', background: '#0a0a12' }}>
+          <div style={{ display: 'flex', gap: 8, padding: '10px 16px', overflowX: 'auto', background: '#0B1020' }}>
             {images.map((url, i) => (
               // eslint-disable-next-line @next/next/no-img-element
               <img key={i} src={url} alt="" onClick={() => setIdx(i)}
-                style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 8, flexShrink: 0, border: `2px solid ${i === idx ? '#d4af37' : 'transparent'}`, cursor: 'pointer', transition: 'border-color 0.2s' }} />
+                style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 8, flexShrink: 0, border: `2px solid ${i === idx ? '#FBBF24' : 'transparent'}`, cursor: 'pointer', transition: 'border-color 0.2s' }} />
             ))}
           </div>
         </>
@@ -174,7 +174,7 @@ export default function ProductDetailPage() {
       <span style={{ fontSize: 48 }}>😕</span>
       <div style={{ fontSize: 16, color: '#fff', fontWeight: 600 }}>Product not found</div>
       <button onClick={() => router.back()}
-        style={{ padding: '10px 24px', borderRadius: 12, background: 'linear-gradient(135deg,#d4af37,#b8882a)', border: 'none', color: '#0a0800', fontWeight: 700, cursor: 'pointer' }}>
+        style={{ padding: '10px 24px', borderRadius: 12, background: 'linear-gradient(135deg,#FBBF24,#F59E0B)', border: 'none', color: '#0a0800', fontWeight: 700, cursor: 'pointer' }}>
         ← Go Back
       </button>
     </div>
@@ -218,10 +218,10 @@ export default function ProductDetailPage() {
         </div>
 
         {/* ── Price ──────────────────────────────── */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: 'linear-gradient(135deg,#1a1208,#0f0f1a)', border: '1px solid rgba(212,175,55,0.15)', borderRadius: 16, marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: 'linear-gradient(135deg,#1a1208,#0f0f1a)', border: '1px solid rgba(251,191,36,0.15)', borderRadius: 16, marginBottom: 20 }}>
           <div>
             <div style={{ fontSize: 10, color: '#6b6b7a', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>Price</div>
-            <div style={{ fontSize: 32, fontWeight: 900, color: '#d4af37', lineHeight: 1 }}>{product.price}π</div>
+            <div style={{ fontSize: 32, fontWeight: 900, color: '#FBBF24', lineHeight: 1 }}>{product.price}π</div>
             <div style={{ fontSize: 11, color: freeShip ? '#10b981' : '#6b6b7a', marginTop: 4 }}>
               {freeShip ? '✓ Free shipping' : `+${shipping.shippingCost}π shipping`}
             </div>
@@ -304,7 +304,7 @@ export default function ProductDetailPage() {
       {/* ── Sticky Buy Button ──────────────────── */}
       <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, padding: '12px 16px 28px', background: 'rgba(8,8,15,0.97)', backdropFilter: 'blur(20px)', borderTop: '1px solid #ffffff08' }}>
         <button onClick={handleBuy} disabled={!inStock || buying}
-          style={{ width: '100%', padding: '16px', borderRadius: 16, background: inStock ? 'linear-gradient(135deg,#d4af37,#b8882a)' : '#ffffff0a', border: 'none', color: inStock ? '#0a0800' : '#4a4a5a', fontSize: 16, fontWeight: 800, cursor: inStock ? 'pointer' : 'not-allowed', letterSpacing: 0.3 }}>
+          style={{ width: '100%', padding: '16px', borderRadius: 16, background: inStock ? 'linear-gradient(135deg,#FBBF24,#F59E0B)' : '#ffffff0a', border: 'none', color: inStock ? '#0a0800' : '#4a4a5a', fontSize: 16, fontWeight: 800, cursor: inStock ? 'pointer' : 'not-allowed', letterSpacing: 0.3 }}>
           {buying ? '⏳ Redirecting...' : inStock ? `Buy Now · ${product.price}π` : 'Out of Stock'}
         </button>
       </div>

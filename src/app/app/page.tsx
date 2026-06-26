@@ -287,7 +287,7 @@ function CommercePageInner() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: isDark ? '#020205' : '#f0f0f5',
+      background: isDark ? '#050816' : '#f0f0f5',
       color:      isDark ? '#fff'    : '#111',
       fontFamily: '-apple-system, BlinkMacSystemFont, system-ui, sans-serif',
       paddingBottom: 90,
@@ -347,27 +347,27 @@ function CommercePageInner() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button className="btn" onClick={() => setDrawerOpen(true)}
-            style={{ width: 36, height: 36, borderRadius: 10, background: isDark ? '#ffffff08' : '#e0e0e8', border: `1px solid ${isDark ? '#ffffff10' : '#ccc'}`, color: '#d4af37', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-            <span style={{ width: 16, height: 2, background: '#d4af37', borderRadius: 1, display: 'block' }} />
-            <span style={{ width: 16, height: 2, background: '#d4af37', borderRadius: 1, display: 'block' }} />
-            <span style={{ width: 10, height: 2, background: '#d4af37', borderRadius: 1, display: 'block', alignSelf: 'flex-start', marginLeft: 3 }} />
+            style={{ width: 36, height: 36, borderRadius: 10, background: isDark ? '#ffffff08' : '#e0e0e8', border: `1px solid ${isDark ? '#ffffff10' : '#ccc'}`, color: '#FBBF24', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+            <span style={{ width: 16, height: 2, background: '#FBBF24', borderRadius: 1, display: 'block' }} />
+            <span style={{ width: 16, height: 2, background: '#FBBF24', borderRadius: 1, display: 'block' }} />
+            <span style={{ width: 10, height: 2, background: '#FBBF24', borderRadius: 1, display: 'block', alignSelf: 'flex-start', marginLeft: 3 }} />
           </button>
           <div>
-            <div style={{ fontSize: 15, fontWeight: 800, color: '#d4af37', lineHeight: 1 }}>Commerce</div>
+            <div style={{ fontSize: 15, fontWeight: 800, color: '#FBBF24', lineHeight: 1 }}>Commerce</div>
             <div style={{ fontSize: 9, color: '#4a4a5a', letterSpacing: 2 }}>TEC ECOSYSTEM</div>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {!piReady && <span style={{ fontSize: 9, color: '#4a4a5a' }}>Pi connecting...</span>}
           {prefs.hideBalance && <span style={{ fontSize: 10, color: '#4a4a5a' }}>👁️ Hidden</span>}
-          <div style={{ fontSize: 12, color: '#d4af37' }}>
+          <div style={{ fontSize: 12, color: '#FBBF24' }}>
             {user?.piUsername ? `@${user.piUsername}` : ''}
           </div>
         </div>
       </header>
 
       <div style={{ padding: '16px 16px 0' }} className="fade-in">
-        <div style={{ borderRadius: 24, padding: '20px 24px', background: 'linear-gradient(135deg,#1a1208 0%,#0f0f1a 60%,#0a0f1f 100%)', border: '1px solid #d4af3725' }}>
+        <div style={{ borderRadius: 24, padding: '20px 24px', background: 'linear-gradient(135deg,#1a1208 0%,#0f0f1a 60%,#0a0f1f 100%)', border: '1px solid #FBBF2425' }}>
           <div style={{ fontSize: 10, color: '#6b6b7a', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 12 }}>COMMERCE OVERVIEW</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
             {[
@@ -378,7 +378,7 @@ function CommercePageInner() {
             ].map(s => (
               <div key={s.label} style={{ background: '#ffffff05', borderRadius: 12, padding: '10px 8px', textAlign: 'center' }}>
                 <div style={{ fontSize: 16, marginBottom: 4 }}>{s.icon}</div>
-                <div style={{ fontSize: 16, fontWeight: 900, color: '#d4af37' }}>
+                <div style={{ fontSize: 16, fontWeight: 900, color: '#FBBF24' }}>
                   {prefs.hideBalance && s.label !== 'Products' && s.label !== 'My Items' ? '••' : s.value}
                 </div>
                 <div style={{ fontSize: 8, color: '#4a4a5a', letterSpacing: 1 }}>{s.label}</div>
@@ -396,7 +396,7 @@ function CommercePageInner() {
           { key: 'sell',     label: '+ Sell'       },
         ] as const).map(tab => (
           <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-            style={{ padding: '8px 14px', borderRadius: 20, cursor: 'pointer', fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap', background: activeTab === tab.key ? '#d4af3712' : isDark ? '#ffffff08' : '#e0e0e8', color: activeTab === tab.key ? '#d4af37' : '#4a4a5a', border: activeTab === tab.key ? '1px solid #d4af3730' : '1px solid transparent', transition: 'all 0.2s' }}>
+            style={{ padding: '8px 14px', borderRadius: 20, cursor: 'pointer', fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap', background: activeTab === tab.key ? '#FBBF2412' : isDark ? '#ffffff08' : '#e0e0e8', color: activeTab === tab.key ? '#FBBF24' : '#4a4a5a', border: activeTab === tab.key ? '1px solid #FBBF2430' : '1px solid transparent', transition: 'all 0.2s' }}>
             {tab.label}
           </button>
         ))}
@@ -428,7 +428,7 @@ function CommercePageInner() {
                 <div style={{ fontSize: 40, marginBottom: 12 }}>💰</div>
                 <div style={{ color: '#4a4a5a', fontSize: 14, marginBottom: 16 }}>No sales yet</div>
                 <button onClick={() => setActiveTab('products')}
-                  style={{ padding: '10px 24px', borderRadius: 12, background: 'linear-gradient(135deg,#d4af37,#b8882a)', border: 'none', color: '#0a0800', fontWeight: 700, cursor: 'pointer' }}>
+                  style={{ padding: '10px 24px', borderRadius: 12, background: 'linear-gradient(135deg,#FBBF24,#F59E0B)', border: 'none', color: '#0a0800', fontWeight: 700, cursor: 'pointer' }}>
                   View Products
                 </button>
               </div>
@@ -463,7 +463,7 @@ function CommercePageInner() {
             <span style={{ fontSize: 18, filter: activeTab === item.key ? 'none' : 'grayscale(1) opacity(0.4)', transition: 'filter 0.2s, transform 0.2s', transform: activeTab === item.key ? 'scale(1.15)' : 'scale(1)' }}>
               {item.icon}
             </span>
-            <span style={{ fontSize: 8, letterSpacing: 1, textTransform: 'uppercase', color: activeTab === item.key ? '#d4af37' : '#4a4a5a', fontWeight: activeTab === item.key ? 700 : 400 }}>
+            <span style={{ fontSize: 8, letterSpacing: 1, textTransform: 'uppercase', color: activeTab === item.key ? '#FBBF24' : '#4a4a5a', fontWeight: activeTab === item.key ? 700 : 400 }}>
               {item.label}
             </span>
             {item.key === 'sales' && pendingSales > 0 && (
@@ -472,7 +472,7 @@ function CommercePageInner() {
               </span>
             )}
             {activeTab === item.key && (
-              <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#d4af37', marginTop: -2 }} />
+              <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#FBBF24', marginTop: -2 }} />
             )}
           </button>
         ))}

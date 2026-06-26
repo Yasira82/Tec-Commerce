@@ -19,7 +19,7 @@ interface Props {
 }
 
 const PAGE_SIZE = 10;
-const GOLD      = '#d4af37';
+const GOLD      = '#FBBF24';
 
 function GridSkeleton() {
   const shimmer: React.CSSProperties = {
@@ -56,9 +56,9 @@ function GridCard({ product, isMine, onBuy, onDelete, onEdit }: {
   return (
     <div data-testid={'card-' + product.id}
       onClick={() => !isMine && router.push(`/app/${product.id}`)}
-      style={{ background: '#0f0f1a', border: '1px solid rgba(212,175,55,0.1)', borderRadius: 16, overflow: 'hidden', cursor: isMine ? 'default' : 'pointer', position: 'relative' }}>
+      style={{ background: '#0f0f1a', border: '1px solid rgba(251,191,36,0.1)', borderRadius: 16, overflow: 'hidden', cursor: isMine ? 'default' : 'pointer', position: 'relative' }}>
 
-      <div style={{ position: 'relative', height: 130, background: '#0a0a12' }}>
+      <div style={{ position: 'relative', height: 130, background: '#0B1020' }}>
         {image ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={image} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -104,7 +104,7 @@ function GridCard({ product, isMine, onBuy, onDelete, onEdit }: {
 
         {!isMine && inStock && (
           <button onClick={e => { e.stopPropagation(); onBuy(product); }}
-            style={{ width: '100%', marginTop: 8, padding: '8px', borderRadius: 10, background: `linear-gradient(135deg,${GOLD},#b8882a)`, border: 'none', color: '#0a0800', fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>
+            style={{ width: '100%', marginTop: 8, padding: '8px', borderRadius: 10, background: `linear-gradient(135deg,${GOLD},#F59E0B)`, border: 'none', color: '#0a0800', fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>
             Buy · {product.price}π
           </button>
         )}
@@ -121,14 +121,14 @@ function FilterPanel({ show, minPrice, maxPrice, country, onMinPrice, onMaxPrice
   if (!show) return null;
 
   const inputStyle: React.CSSProperties = {
-    flex: 1, background: isDark ? '#0d0d14' : '#e8e8f0',
+    flex: 1, background: isDark ? '#0B1020' : '#e8e8f0',
     border: `1px solid ${isDark ? '#ffffff10' : '#ccc'}`,
     borderRadius: 10, padding: '8px 10px',
     color: isDark ? '#fff' : '#111', fontSize: 12, outline: 'none',
   };
 
   return (
-    <div style={{ background: isDark ? '#0d0d14' : '#e8e8f0', border: `1px solid ${isDark ? '#ffffff08' : '#ddd'}`, borderRadius: 14, padding: '14px', marginBottom: 10 }}>
+    <div style={{ background: isDark ? '#0B1020' : '#e8e8f0', border: `1px solid ${isDark ? '#ffffff08' : '#ddd'}`, borderRadius: 14, padding: '14px', marginBottom: 10 }}>
       <div style={{ marginBottom: 12 }}>
         <div style={{ fontSize: 10, color: '#6b6b7a', letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 700, marginBottom: 8 }}>
           💰 Price Range (π)
@@ -229,7 +229,7 @@ export function ProductsTab({ products, userId, dataLoading, onBuy, onDelete, on
         <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14 }}>🔍</span>
         <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
           placeholder="Search products..."
-          style={{ width: '100%', background: '#0d0d14', border: '1px solid #ffffff10', borderRadius: 14, padding: '11px 80px 11px 36px', color: '#fff', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+          style={{ width: '100%', background: '#0B1020', border: '1px solid #ffffff10', borderRadius: 14, padding: '11px 80px 11px 36px', color: '#fff', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
         <div style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', display: 'flex', gap: 4 }}>
           <button data-testid="filter-toggle" onClick={() => setShowFilters(p => !p)}
             style={{ padding: '5px 10px', borderRadius: 10, background: (showFilters || hasActiveFilters) ? `${GOLD}20` : '#ffffff08', border: `1px solid ${(showFilters || hasActiveFilters) ? `${GOLD}40` : '#ffffff10'}`, color: (showFilters || hasActiveFilters) ? GOLD : '#4a4a5a', fontSize: 11, cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -254,12 +254,12 @@ export function ProductsTab({ products, userId, dataLoading, onBuy, onDelete, on
       {/* ── Category Pills ─────────────────────── */}
       <div style={{ display: 'flex', gap: 6, overflowX: 'auto', marginBottom: 10, paddingBottom: 2 }}>
         <button onClick={() => { setCategory('All'); setPage(1); }}
-          style={{ padding: '5px 12px', borderRadius: 20, whiteSpace: 'nowrap', cursor: 'pointer', fontSize: 11, fontWeight: 600, background: category === 'All' ? '#d4af3712' : '#ffffff08', color: category === 'All' ? GOLD : '#4a4a5a', border: category === 'All' ? `1px solid ${GOLD}30` : '1px solid transparent', flexShrink: 0 }}>
+          style={{ padding: '5px 12px', borderRadius: 20, whiteSpace: 'nowrap', cursor: 'pointer', fontSize: 11, fontWeight: 600, background: category === 'All' ? '#FBBF2412' : '#ffffff08', color: category === 'All' ? GOLD : '#4a4a5a', border: category === 'All' ? `1px solid ${GOLD}30` : '1px solid transparent', flexShrink: 0 }}>
           All
         </button>
         {CATEGORIES.map(cat => (
           <button key={cat} onClick={() => { setCategory(cat); setPage(1); }}
-            style={{ padding: '5px 12px', borderRadius: 20, whiteSpace: 'nowrap', cursor: 'pointer', fontSize: 11, fontWeight: 600, background: category === cat ? '#d4af3712' : '#ffffff08', color: category === cat ? GOLD : '#4a4a5a', border: category === cat ? `1px solid ${GOLD}30` : '1px solid transparent', flexShrink: 0 }}>
+            style={{ padding: '5px 12px', borderRadius: 20, whiteSpace: 'nowrap', cursor: 'pointer', fontSize: 11, fontWeight: 600, background: category === cat ? '#FBBF2412' : '#ffffff08', color: category === cat ? GOLD : '#4a4a5a', border: category === cat ? `1px solid ${GOLD}30` : '1px solid transparent', flexShrink: 0 }}>
             {CATEGORY_ICONS[cat]} {cat}
           </button>
         ))}
@@ -272,20 +272,20 @@ export function ProductsTab({ products, userId, dataLoading, onBuy, onDelete, on
           {hasActiveFilters && <span style={{ color: GOLD, marginLeft: 4 }}>· filtered</span>}
         </span>
         <button onClick={() => { setShowMine(p => !p); setPage(1); }}
-          style={{ padding: '5px 10px', borderRadius: 20, cursor: 'pointer', fontSize: 10, fontWeight: 600, background: showMine ? '#d4af3712' : '#ffffff08', color: showMine ? GOLD : '#4a4a5a', border: showMine ? `1px solid ${GOLD}30` : '1px solid transparent', whiteSpace: 'nowrap' }}>
+          style={{ padding: '5px 10px', borderRadius: 20, cursor: 'pointer', fontSize: 10, fontWeight: 600, background: showMine ? '#FBBF2412' : '#ffffff08', color: showMine ? GOLD : '#4a4a5a', border: showMine ? `1px solid ${GOLD}30` : '1px solid transparent', whiteSpace: 'nowrap' }}>
           {showMine ? '✅ Mine' : 'Mine'}
         </button>
         <select value={sort} onChange={e => { setSort(e.target.value as SortKey); setPage(1); }}
-          style={{ padding: '5px 8px', background: '#0d0d14', border: '1px solid #ffffff10', borderRadius: 10, color: '#fff', fontSize: 10, cursor: 'pointer', outline: 'none' }}>
+          style={{ padding: '5px 8px', background: '#0B1020', border: '1px solid #ffffff10', borderRadius: 10, color: '#fff', fontSize: 10, cursor: 'pointer', outline: 'none' }}>
           <option value="newest">Newest</option>
           <option value="price_asc">Price ↑</option>
           <option value="price_desc">Price ↓</option>
           <option value="rating">Rating</option>
         </select>
-        <div style={{ display: 'flex', background: '#0d0d14', border: '1px solid #ffffff10', borderRadius: 10, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', background: '#0B1020', border: '1px solid #ffffff10', borderRadius: 10, overflow: 'hidden' }}>
           {(['grid', 'list'] as ViewMode[]).map(v => (
             <button key={v} onClick={() => setView(v)}
-              style={{ padding: '5px 9px', background: view === v ? '#d4af3720' : 'transparent', border: 'none', color: view === v ? GOLD : '#4a4a5a', cursor: 'pointer', fontSize: 13 }}>
+              style={{ padding: '5px 9px', background: view === v ? '#FBBF2420' : 'transparent', border: 'none', color: view === v ? GOLD : '#4a4a5a', cursor: 'pointer', fontSize: 13 }}>
               {v === 'grid' ? '⊞' : '≡'}
             </button>
           ))}
@@ -307,7 +307,7 @@ export function ProductsTab({ products, userId, dataLoading, onBuy, onDelete, on
           )}
           {!search && !hasActiveFilters && (
             <button onClick={onAddFirst}
-              style={{ padding: '10px 24px', borderRadius: 12, background: `linear-gradient(135deg,${GOLD},#b8882a)`, border: 'none', color: '#0a0800', fontWeight: 700, cursor: 'pointer' }}>
+              style={{ padding: '10px 24px', borderRadius: 12, background: `linear-gradient(135deg,${GOLD},#F59E0B)`, border: 'none', color: '#0a0800', fontWeight: 700, cursor: 'pointer' }}>
               Add First Product
             </button>
           )}
@@ -341,7 +341,7 @@ export function ProductsTab({ products, userId, dataLoading, onBuy, onDelete, on
                 page - 2 + i;
               return (
                 <button key={p} onClick={() => { setPage(p); window.scrollTo(0, 0); }}
-                  style={{ width: 32, height: 32, borderRadius: 8, background: page === p ? `linear-gradient(135deg,${GOLD},#b8882a)` : '#ffffff08', border: 'none', color: page === p ? '#0a0800' : '#4a4a5a', fontSize: 12, fontWeight: page === p ? 700 : 400, cursor: 'pointer' }}>
+                  style={{ width: 32, height: 32, borderRadius: 8, background: page === p ? `linear-gradient(135deg,${GOLD},#F59E0B)` : '#ffffff08', border: 'none', color: page === p ? '#0a0800' : '#4a4a5a', fontSize: 12, fontWeight: page === p ? 700 : 400, cursor: 'pointer' }}>
                   {p}
                 </button>
               );
