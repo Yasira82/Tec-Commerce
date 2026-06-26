@@ -127,11 +127,11 @@ function ReviewForm({ onSubmit, onCancel }: {
       </div>
       <textarea value={comment} onChange={e => setComment(e.target.value)}
         placeholder="Share your experience..."
-        style={{ width: '100%', background: '#0a0a12', border: '1px solid #ffffff10', borderRadius: 10, padding: '10px 12px', color: '#fff', fontSize: 12, resize: 'none', outline: 'none', marginBottom: 10, boxSizing: 'border-box', fontFamily: 'inherit' }}
+        style={{ width: '100%', background: '#0B1020', border: '1px solid #ffffff10', borderRadius: 10, padding: '10px 12px', color: '#fff', fontSize: 12, resize: 'none', outline: 'none', marginBottom: 10, boxSizing: 'border-box', fontFamily: 'inherit' }}
         rows={3} />
       <div style={{ display: 'flex', gap: 8 }}>
         <button onClick={handleSubmit} disabled={submitting || !comment.trim()}
-          style={{ flex: 1, padding: '11px', borderRadius: 10, background: !comment.trim() ? '#ffffff08' : 'linear-gradient(135deg,#d4af37,#b8882a)', border: 'none', color: !comment.trim() ? '#4a4a5a' : '#0a0800', fontWeight: 700, fontSize: 12, cursor: !comment.trim() ? 'not-allowed' : 'pointer' }}>
+          style={{ flex: 1, padding: '11px', borderRadius: 10, background: !comment.trim() ? '#ffffff08' : 'linear-gradient(135deg,#FBBF24,#F59E0B)', border: 'none', color: !comment.trim() ? '#4a4a5a' : '#0a0800', fontWeight: 700, fontSize: 12, cursor: !comment.trim() ? 'not-allowed' : 'pointer' }}>
           {submitting ? '⏳ Submitting...' : '⭐ Submit Review'}
         </button>
         <button onClick={onCancel}
@@ -160,7 +160,7 @@ export function OrderCard({ order, onReview }: Props) {
 
   return (
     <div style={{
-      background: 'linear-gradient(180deg,#0f0f1a 0%,#0a0a12 100%)',
+      background: 'linear-gradient(180deg,#0f0f1a 0%,#0B1020 100%)',
       border: `1px solid ${expanded ? `${cfg.color}30` : '#ffffff08'}`,
       borderRadius: 18, marginBottom: 12, overflow: 'hidden',
       transition: 'border-color 0.2s ease',
@@ -203,7 +203,7 @@ export function OrderCard({ order, onReview }: Props) {
               </div>
               <div style={{ fontSize: 10, color: '#4a4a5a' }}>{formatDate(order.createdAt)}</div>
             </div>
-            <div style={{ fontSize: 18, fontWeight: 900, color: '#d4af37', flexShrink: 0 }}>
+            <div style={{ fontSize: 18, fontWeight: 900, color: '#FBBF24', flexShrink: 0 }}>
               {order.total}π
             </div>
           </div>

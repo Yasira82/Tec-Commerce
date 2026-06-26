@@ -92,7 +92,7 @@ function ImageUploader({ images, onChange }: {
             <div key={url} style={{ position: 'relative', width: 72, height: 72 }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={url} alt={`img-${i}`}
-                style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 10, border: '1px solid rgba(212,175,55,0.2)' }} />
+                style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 10, border: '1px solid rgba(251,191,36,0.2)' }} />
               <button onClick={() => remove(i)}
                 style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: '#ef4444', border: 'none', color: '#fff', fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>
                 ×
@@ -108,7 +108,7 @@ function ImageUploader({ images, onChange }: {
           <input ref={fileRef} type="file" accept="image/*" multiple onChange={handleFile}
             style={{ display: 'none' }} />
           <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
-            style={{ width: '100%', padding: '12px', borderRadius: 12, background: '#ffffff06', border: '1px dashed rgba(212,175,55,0.25)', color: uploading ? '#4a4a5a' : '#d4af37', fontSize: 12, fontWeight: 600, cursor: uploading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 4 }}>
+            style={{ width: '100%', padding: '12px', borderRadius: 12, background: '#ffffff06', border: '1px dashed rgba(251,191,36,0.25)', color: uploading ? '#4a4a5a' : '#FBBF24', fontSize: 12, fontWeight: 600, cursor: uploading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 4 }}>
             {uploading ? (
               <><span style={{ fontSize: 16 }}>⏳</span> Uploading...</>
             ) : (
@@ -182,16 +182,16 @@ export function AddProductForm({ onSuccess }: Props) {
   };
 
   return (
-    <div style={{ background: '#0d0d14', border: '1px solid rgba(212,175,55,0.12)', borderRadius: 18, padding: 20 }}>
+    <div style={{ background: '#0B1020', border: '1px solid rgba(251,191,36,0.12)', borderRadius: 18, padding: 20 }}>
 
       {/* Steps */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
         {(['1. Product', '2. Shipping', '3. Contact'] as const).map((s, i) => (
           <button key={s} onClick={() => setStep((i + 1) as 1 | 2 | 3)}
             style={{ flex: 1, padding: '8px', borderRadius: 10, cursor: 'pointer', fontSize: 10, fontWeight: 700,
-              background: step === i + 1 ? '#d4af3712' : '#ffffff08',
-              color:      step === i + 1 ? '#d4af37'   : '#4a4a5a',
-              border:     step === i + 1 ? '1px solid #d4af3730' : '1px solid transparent' }}>
+              background: step === i + 1 ? '#FBBF2412' : '#ffffff08',
+              color:      step === i + 1 ? '#FBBF24'   : '#4a4a5a',
+              border:     step === i + 1 ? '1px solid #FBBF2430' : '1px solid transparent' }}>
             {s}
           </button>
         ))}
@@ -241,9 +241,9 @@ export function AddProductForm({ onSuccess }: Props) {
             {(['new', 'used', 'refurbished'] as ProductCondition[]).map(c => (
               <button key={c} onClick={() => update('condition', c)}
                 style={{ flex: 1, padding: '10px', borderRadius: 10, cursor: 'pointer', fontSize: 11, fontWeight: 600, textTransform: 'capitalize',
-                  background: form.condition === c ? '#d4af3712' : '#ffffff08',
-                  color:      form.condition === c ? '#d4af37'   : '#4a4a5a',
-                  border:     form.condition === c ? '1px solid #d4af3730' : '1px solid transparent' }}>
+                  background: form.condition === c ? '#FBBF2412' : '#ffffff08',
+                  color:      form.condition === c ? '#FBBF24'   : '#4a4a5a',
+                  border:     form.condition === c ? '1px solid #FBBF2430' : '1px solid transparent' }}>
                 {c}
               </button>
             ))}
@@ -258,7 +258,7 @@ export function AddProductForm({ onSuccess }: Props) {
             placeholder="e.g. 30-day returns" style={inputStyle} />
 
           <button onClick={() => setStep(2)}
-            style={{ width: '100%', padding: '14px', borderRadius: 14, background: 'linear-gradient(135deg,#d4af37,#b8882a)', border: 'none', color: '#0a0800', fontSize: 14, fontWeight: 800, cursor: 'pointer' }}>
+            style={{ width: '100%', padding: '14px', borderRadius: 14, background: 'linear-gradient(135deg,#FBBF24,#F59E0B)', border: 'none', color: '#0a0800', fontSize: 14, fontWeight: 800, cursor: 'pointer' }}>
             Next: Shipping →
           </button>
         </div>
@@ -300,7 +300,7 @@ export function AddProductForm({ onSuccess }: Props) {
               ← Back
             </button>
             <button onClick={() => setStep(3)}
-              style={{ flex: 2, padding: '14px', borderRadius: 14, background: 'linear-gradient(135deg,#d4af37,#b8882a)', border: 'none', color: '#0a0800', fontSize: 14, fontWeight: 800, cursor: 'pointer' }}>
+              style={{ flex: 2, padding: '14px', borderRadius: 14, background: 'linear-gradient(135deg,#FBBF24,#F59E0B)', border: 'none', color: '#0a0800', fontSize: 14, fontWeight: 800, cursor: 'pointer' }}>
               Next: Contact →
             </button>
           </div>
@@ -329,13 +329,13 @@ export function AddProductForm({ onSuccess }: Props) {
               <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
                 {form.images.slice(0, 3).map((url, i) => (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img key={i} src={url} alt="" style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 8, border: '1px solid rgba(212,175,55,0.2)' }} />
+                  <img key={i} src={url} alt="" style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 8, border: '1px solid rgba(251,191,36,0.2)' }} />
                 ))}
                 {form.images.length > 3 && <div style={{ width: 44, height: 44, borderRadius: 8, background: '#ffffff08', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#6b6b7a' }}>+{form.images.length - 3}</div>}
               </div>
             )}
             <div style={{ fontSize: 13, color: '#fff', fontWeight: 600 }}>{form.title || 'No title'}</div>
-            <div style={{ fontSize: 16, color: '#d4af37', fontWeight: 900, marginTop: 4 }}>{form.price || '0'}π</div>
+            <div style={{ fontSize: 16, color: '#FBBF24', fontWeight: 900, marginTop: 4 }}>{form.price || '0'}π</div>
             <div style={{ fontSize: 11, color: '#4a4a5a', marginTop: 4 }}>{form.city}, {form.country} · {form.estimatedDays}</div>
           </div>
 
@@ -345,7 +345,7 @@ export function AddProductForm({ onSuccess }: Props) {
               ← Back
             </button>
             <button onClick={handleSubmit} disabled={loading}
-              style={{ flex: 2, padding: '14px', borderRadius: 14, background: loading ? '#ffffff10' : 'linear-gradient(135deg,#d4af37,#b8882a)', border: 'none', color: loading ? '#4a4a5a' : '#0a0800', fontSize: 14, fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer' }}>
+              style={{ flex: 2, padding: '14px', borderRadius: 14, background: loading ? '#ffffff10' : 'linear-gradient(135deg,#FBBF24,#F59E0B)', border: 'none', color: loading ? '#4a4a5a' : '#0a0800', fontSize: 14, fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer' }}>
               {loading ? '⏳ Publishing...' : '🚀 Publish Product'}
             </button>
           </div>

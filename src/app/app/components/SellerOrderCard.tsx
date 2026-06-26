@@ -85,7 +85,7 @@ export function SellerOrderCard({ order, onUpdate }: Props) {
 
   return (
     <div style={{
-      background: 'linear-gradient(180deg,#0f0f1a,#0a0a12)',
+      background: 'linear-gradient(180deg,#0f0f1a,#0B1020)',
       border: `1px solid ${expanded ? `${cfg.color}30` : '#ffffff08'}`,
       borderRadius: 18, marginBottom: 12, overflow: 'hidden',
     }}>
@@ -105,7 +105,7 @@ export function SellerOrderCard({ order, onUpdate }: Props) {
               {cfg.label}
             </span>
             {actions.length > 0 && (
-              <span style={{ fontSize: 9, color: '#d4af37', background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.2)', borderRadius: 20, padding: '3px 8px', fontWeight: 700 }}>
+              <span style={{ fontSize: 9, color: '#FBBF24', background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.2)', borderRadius: 20, padding: '3px 8px', fontWeight: 700 }}>
                 Action needed
               </span>
             )}
@@ -120,7 +120,7 @@ export function SellerOrderCard({ order, onUpdate }: Props) {
             </div>
             <div style={{ fontSize: 10, color: '#4a4a5a', marginTop: 2 }}>{formatDate(order.createdAt)}</div>
           </div>
-          <div style={{ fontSize: 20, fontWeight: 900, color: '#d4af37' }}>{order.total}π</div>
+          <div style={{ fontSize: 20, fontWeight: 900, color: '#FBBF24' }}>{order.total}π</div>
         </div>
       </button>
 
@@ -150,7 +150,7 @@ export function SellerOrderCard({ order, onUpdate }: Props) {
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ fontSize: 11, color: '#6b6b7a' }}>Total</span>
-              <span style={{ fontSize: 14, fontWeight: 700, color: '#d4af37' }}>{order.total}π</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#FBBF24' }}>{order.total}π</span>
             </div>
           </div>
 
@@ -184,14 +184,14 @@ export function SellerOrderCard({ order, onUpdate }: Props) {
               </div>
               <input value={note} onChange={e => setNote(e.target.value)}
                 placeholder={pendingStatus === 'cancelled' ? 'Reason for cancellation...' : 'Tracking number or courier name...'}
-                style={{ width: '100%', background: '#0a0a12', border: '1px solid #ffffff10', borderRadius: 8, padding: '8px 12px', color: '#fff', fontSize: 12, outline: 'none', boxSizing: 'border-box', marginBottom: 10, fontFamily: 'inherit' }} />
+                style={{ width: '100%', background: '#0B1020', border: '1px solid #ffffff10', borderRadius: 8, padding: '8px 12px', color: '#fff', fontSize: 12, outline: 'none', boxSizing: 'border-box', marginBottom: 10, fontFamily: 'inherit' }} />
               <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={() => { setShowNote(false); setPendingStatus(null); setNote(''); }}
                   style={{ flex: 1, padding: '9px', borderRadius: 10, background: 'transparent', border: '1px solid #ffffff15', color: '#6b6b7a', fontSize: 12, cursor: 'pointer' }}>
                   Back
                 </button>
                 <button onClick={confirmUpdate} disabled={!!updating}
-                  style={{ flex: 2, padding: '9px', borderRadius: 10, background: pendingStatus === 'cancelled' ? 'rgba(239,68,68,0.15)' : 'linear-gradient(135deg,#d4af37,#b8882a)', border: `1px solid ${pendingStatus === 'cancelled' ? 'rgba(239,68,68,0.3)' : 'transparent'}`, color: pendingStatus === 'cancelled' ? '#ef4444' : '#0a0800', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                  style={{ flex: 2, padding: '9px', borderRadius: 10, background: pendingStatus === 'cancelled' ? 'rgba(239,68,68,0.15)' : 'linear-gradient(135deg,#FBBF24,#F59E0B)', border: `1px solid ${pendingStatus === 'cancelled' ? 'rgba(239,68,68,0.3)' : 'transparent'}`, color: pendingStatus === 'cancelled' ? '#ef4444' : '#0a0800', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
                   {updating ? '⏳ Updating...' : 'Confirm'}
                 </button>
               </div>
@@ -208,7 +208,7 @@ export function SellerOrderCard({ order, onUpdate }: Props) {
                     flex: 1, padding: '11px', borderRadius: 12, fontWeight: 700, fontSize: 12, cursor: 'pointer',
                     background: action.status === 'cancelled'
                       ? 'rgba(239,68,68,0.08)'
-                      : 'linear-gradient(135deg,#d4af37,#b8882a)',
+                      : 'linear-gradient(135deg,#FBBF24,#F59E0B)',
                     border: action.status === 'cancelled'
                       ? '1px solid rgba(239,68,68,0.2)'
                       : 'none',

@@ -107,7 +107,7 @@ export function EditProductModal({ product, onClose, onSuccess }: Props) {
   return (
     <div onClick={e => e.target === e.currentTarget && onClose()}
       style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(2,2,5,0.88)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: 16 }}>
-      <div style={{ background: '#0d0d14', border: '1px solid rgba(212,175,55,0.15)', borderRadius: '20px 20px 16px 16px', padding: 20, width: '100%', maxWidth: 480, maxHeight: '90vh', overflowY: 'auto' }}>
+      <div style={{ background: '#0B1020', border: '1px solid rgba(251,191,36,0.15)', borderRadius: '20px 20px 16px 16px', padding: 20, width: '100%', maxWidth: 480, maxHeight: '90vh', overflowY: 'auto' }}>
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
@@ -129,7 +129,7 @@ export function EditProductModal({ product, onClose, onSuccess }: Props) {
             {images.map((url, i) => (
               <div key={`${url}-${i}`} style={{ position: 'relative', width: 64, height: 64 }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={url} alt="" style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 10, border: '1px solid rgba(212,175,55,0.2)' }} />
+                <img src={url} alt="" style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 10, border: '1px solid rgba(251,191,36,0.2)' }} />
                 <button onClick={() => setImages(p => p.filter((_, j) => j !== i))}
                   style={{ position: 'absolute', top: -6, right: -6, width: 18, height: 18, borderRadius: '50%', background: '#ef4444', border: 'none', color: '#fff', fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>×</button>
               </div>
@@ -140,7 +140,7 @@ export function EditProductModal({ product, onClose, onSuccess }: Props) {
           <>
             <input ref={fileRef} type="file" accept="image/*" multiple onChange={handleUpload} style={{ display: 'none' }} />
             <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
-              style={{ width: '100%', padding: '10px', borderRadius: 10, background: '#ffffff06', border: '1px dashed rgba(212,175,55,0.2)', color: uploading ? '#4a4a5a' : '#d4af37', fontSize: 12, cursor: 'pointer', marginBottom: 12 }}>
+              style={{ width: '100%', padding: '10px', borderRadius: 10, background: '#ffffff06', border: '1px dashed rgba(251,191,36,0.2)', color: uploading ? '#4a4a5a' : '#FBBF24', fontSize: 12, cursor: 'pointer', marginBottom: 12 }}>
               {uploading ? '⏳ Uploading...' : '📷 Add Photos'}
             </button>
           </>
@@ -217,7 +217,7 @@ export function EditProductModal({ product, onClose, onSuccess }: Props) {
             Cancel
           </button>
           <button onClick={handleSave} disabled={saving}
-            style={{ flex: 2, padding: '13px', borderRadius: 14, background: saving ? '#ffffff10' : 'linear-gradient(135deg,#d4af37,#b8882a)', border: 'none', color: saving ? '#4a4a5a' : '#0a0800', fontSize: 14, fontWeight: 800, cursor: saving ? 'not-allowed' : 'pointer' }}>
+            style={{ flex: 2, padding: '13px', borderRadius: 14, background: saving ? '#ffffff10' : 'linear-gradient(135deg,#FBBF24,#F59E0B)', border: 'none', color: saving ? '#4a4a5a' : '#0a0800', fontSize: 14, fontWeight: 800, cursor: saving ? 'not-allowed' : 'pointer' }}>
             {saving ? '⏳ Saving...' : '💾 Save Changes'}
           </button>
         </div>

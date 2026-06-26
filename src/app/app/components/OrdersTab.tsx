@@ -17,7 +17,7 @@ export function OrdersTab({ orders, onReview, onShop }: Props) {
         <div style={{ color: '#4a4a5a', fontSize: 14, marginBottom: 16 }}>No orders yet</div>
         <button onClick={onShop}
           style={{ padding: '10px 24px', borderRadius: 12,
-            background: 'linear-gradient(135deg,#d4af37,#b8882a)',
+            background: 'linear-gradient(135deg,#FBBF24,#F59E0B)',
             border: 'none', color: '#0a0800', fontWeight: 700, cursor: 'pointer' }}>
           Start Shopping
         </button>
