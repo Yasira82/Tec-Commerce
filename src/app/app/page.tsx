@@ -390,15 +390,15 @@ function CommercePageInner() {
       </div>
 
       <div style={{ padding: '14px 16px 0', display: 'flex', gap: 6, overflowX: 'auto' }}>
-        {([
-          { key: 'products', label: '🛒 Products' },
-          { key: 'orders',   label: '🧾 Orders'   },
-          { key: 'sales',    label: pendingSales > 0 ? `📦 Sales (${pendingSales})` : '📦 Sales' },
-          { key: 'sell',     label: '+ Sell'       },
-        ] as const).map(tab => (
+        {(([
+          { key: 'products', icon: 'cart',    label: 'Products' },
+          { key: 'orders',   icon: 'receipt', label: 'Orders'   },
+          { key: 'sales',    icon: 'chart',   label: pendingSales > 0 ? `Sales (${pendingSales})` : 'Sales' },
+          { key: 'sell',     icon: 'plus',    label: 'Sell'     },
+        ]) as { key: MainTab; icon: IconName; label: string }[]).map(tab => (
           <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-            style={{ padding: '8px 14px', borderRadius: 20, cursor: 'pointer', fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap', background: activeTab === tab.key ? '#FBBF2412' : isDark ? '#ffffff08' : '#e0e0e8', color: activeTab === tab.key ? '#FBBF24' : '#4a4a5a', border: activeTab === tab.key ? '1px solid #FBBF2430' : '1px solid transparent', transition: 'all 0.2s' }}>
-            {tab.label}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '8px 14px', borderRadius: 20, cursor: 'pointer', fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap', background: activeTab === tab.key ? '#FBBF2412' : isDark ? '#ffffff08' : '#e0e0e8', color: activeTab === tab.key ? '#FBBF24' : '#4a4a5a', border: activeTab === tab.key ? '1px solid #FBBF2430' : '1px solid transparent', transition: 'all 0.2s' }}>
+            <Icon name={tab.icon} size={14} /> {tab.label}
           </button>
         ))}
       </div>
@@ -426,7 +426,7 @@ function CommercePageInner() {
           <div>
             {sellerOrders.length === 0 ? (
               <div style={{ textAlign: 'center', padding: 40 }}>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>💰</div>
+                <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}><Icon name="chart" size={40} color="#4a4a5a" strokeWidth={1.5} /></div>
                 <div style={{ color: '#4a4a5a', fontSize: 14, marginBottom: 16 }}>No sales yet</div>
                 <button onClick={() => setActiveTab('products')}
                   style={{ padding: '10px 24px', borderRadius: 12, background: 'linear-gradient(135deg,#FBBF24,#F59E0B)', border: 'none', color: '#0a0800', fontWeight: 700, cursor: 'pointer' }}>

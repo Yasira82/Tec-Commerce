@@ -150,9 +150,9 @@ describe('page.tsx handler coverage', () => {
     const { default: CommercePage } = await import('../page');
     render(React.createElement(CommercePage));
 
-    // Switch to orders tab
-    await waitFor(() => screen.getByText('🧾 Orders'));
-    await act(async () => { screen.getByText('🧾 Orders').click(); });
+    // Switch to orders tab (label is now icon + "Orders", no emoji)
+    await waitFor(() => screen.getAllByRole('button').find(b => b.textContent?.trim() === 'Orders'));
+    await act(async () => { screen.getAllByRole('button').find(b => b.textContent?.trim() === 'Orders')!.click(); });
 
     await waitFor(() => screen.getByTestId(`review-${mockOrder.id}`));
     await act(async () => { screen.getByTestId(`review-${mockOrder.id}`).click(); });
@@ -176,9 +176,9 @@ describe('page.tsx handler coverage', () => {
     const { default: CommercePage } = await import('../page');
     render(React.createElement(CommercePage));
 
-    // Find the tab button with 📦 emoji (sales tab)
-    await waitFor(() => screen.getAllByRole('button').find(b => b.textContent?.includes('📦')));
-    const salesTabBtn = screen.getAllByRole('button').find(b => b.textContent?.includes('📦') && b.textContent?.includes('Sales'));
+    // Find the sales tab (label is now icon + "Sales", no emoji)
+    await waitFor(() => screen.getAllByRole('button').find(b => b.textContent?.includes('Sales')));
+    const salesTabBtn = screen.getAllByRole('button').find(b => b.textContent?.includes('Sales'));
     if (!salesTabBtn) throw new Error('Sales tab not found');
     await act(async () => { salesTabBtn.click(); });
 
