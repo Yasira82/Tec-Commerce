@@ -13,6 +13,7 @@ import { CommerceDrawer }                           from './components/CommerceD
 import { Product, Order, MainTab }                  from './types';
 import { createPaymentRecord, createU2APayment }    from '@/lib/pi-payment';
 import { PaymentModal, PayStatus }                  from '@yasser172/tec-ui/payment';
+import { Icon, type IconName }                       from '@yasser172/tec-ui';
 
 const HUB_URL      = process.env.NEXT_PUBLIC_HUB_URL      ?? 'https://hub.tecosystem.app';
 const COMMERCE_URL = process.env.NEXT_PUBLIC_COMMERCE_URL ?? 'https://commerce.tecosystem.app';
@@ -370,14 +371,14 @@ function CommercePageInner() {
         <div style={{ borderRadius: 24, padding: '20px 24px', background: 'linear-gradient(135deg,#1a1208 0%,#0f0f1a 60%,#0a0f1f 100%)', border: '1px solid #FBBF2425' }}>
           <div style={{ fontSize: 10, color: '#6b6b7a', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 12 }}>COMMERCE OVERVIEW</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
-            {[
-              { label: 'Products', value: products.length.toString(),    icon: '🛒' },
-              { label: 'My Items', value: myProductsCount.toString(),     icon: '📦' },
-              { label: 'Orders',   value: orders.length.toString(),       icon: '🧾' },
-              { label: 'Sales',    value: sellerOrders.length.toString(), icon: '💰' },
-            ].map(s => (
+            {([
+              { label: 'Products', value: products.length.toString(),    icon: 'cart'    as const },
+              { label: 'My Items', value: myProductsCount.toString(),     icon: 'box'     as const },
+              { label: 'Orders',   value: orders.length.toString(),       icon: 'receipt' as const },
+              { label: 'Sales',    value: sellerOrders.length.toString(), icon: 'chart'   as const },
+            ]).map(s => (
               <div key={s.label} style={{ background: '#ffffff05', borderRadius: 12, padding: '10px 8px', textAlign: 'center' }}>
-                <div style={{ fontSize: 16, marginBottom: 4 }}>{s.icon}</div>
+                <div style={{ marginBottom: 5, display: 'flex', justifyContent: 'center' }}><Icon name={s.icon} size={18} color="#FBBF24" strokeWidth={1.9} /></div>
                 <div style={{ fontSize: 16, fontWeight: 900, color: '#FBBF24' }}>
                   {prefs.hideBalance && s.label !== 'Products' && s.label !== 'My Items' ? '••' : s.value}
                 </div>
@@ -452,16 +453,16 @@ function CommercePageInner() {
       </div>
 
       <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: isDark ? 'rgba(10,10,18,0.97)' : 'rgba(240,240,245,0.97)', backdropFilter: 'blur(20px)', borderTop: `1px solid ${isDark ? '#ffffff08' : '#e0e0e8'}`, display: 'flex', padding: '10px 0 22px' }}>
-        {([
-          { key: 'products', icon: '🛒', label: 'Products' },
-          { key: 'orders',   icon: '🧾', label: 'Orders'   },
-          { key: 'sales',    icon: '💰', label: 'Sales'    },
-          { key: 'sell',     icon: '➕', label: 'Sell'     },
-        ] as const).map(item => (
+        {(([
+          { key: 'products', icon: 'cart',    label: 'Products' },
+          { key: 'orders',   icon: 'receipt', label: 'Orders'   },
+          { key: 'sales',    icon: 'chart',   label: 'Sales'    },
+          { key: 'sell',     icon: 'plus',    label: 'Sell'     },
+        ]) as { key: MainTab; icon: IconName; label: string }[]).map(item => (
           <button key={item.key} className="btn" onClick={() => setActiveTab(item.key)}
-            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: 'none', border: 'none', cursor: 'pointer', position: 'relative' }}>
-            <span style={{ fontSize: 18, filter: activeTab === item.key ? 'none' : 'grayscale(1) opacity(0.4)', transition: 'filter 0.2s, transform 0.2s', transform: activeTab === item.key ? 'scale(1.15)' : 'scale(1)' }}>
-              {item.icon}
+            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', position: 'relative' }}>
+            <span style={{ transition: 'transform 0.2s', transform: activeTab === item.key ? 'scale(1.08)' : 'scale(1)' }}>
+              <Icon name={item.icon} size={20} color={activeTab === item.key ? '#FBBF24' : '#4a4a5a'} strokeWidth={activeTab === item.key ? 2.2 : 1.9} />
             </span>
             <span style={{ fontSize: 8, letterSpacing: 1, textTransform: 'uppercase', color: activeTab === item.key ? '#FBBF24' : '#4a4a5a', fontWeight: activeTab === item.key ? 700 : 400 }}>
               {item.label}
