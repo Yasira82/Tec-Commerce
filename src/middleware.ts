@@ -18,6 +18,7 @@ const CSRF_COOKIE_OPTS = {
   httpOnly: false,
   secure:   true,
   sameSite: 'none' as const,
+  partitioned: true,
   path:     '/',
   maxAge:   60 * 60 * 24,
 };
