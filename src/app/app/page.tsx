@@ -12,6 +12,8 @@ import { SellerOrderCard }                          from './components/SellerOrd
 import { CommerceDrawer }                           from './components/CommerceDrawer';
 import { Product, Order, MainTab }                  from './types';
 import { createPaymentRecord, createU2APayment }    from '@/lib/pi-payment';
+// ADR-007/C-12 §3: flag-aware (sessionStorage OR referrer) — see hub-entry.ts
+import { isHubNavigation }                          from '@/lib-client/pi/hub-entry';
 import { PaymentModal, PayStatus }                  from '@yasser172/tec-ui/payment';
 import { Icon, type IconName }                       from '@yasser172/tec-ui';
 
@@ -24,11 +26,6 @@ type Prefs = { theme: 'dark' | 'light'; currency: 'PI' | 'USD'; hideBalance: boo
 const getCsrfToken = (): string =>
   typeof document === 'undefined' ? '' :
   document.cookie.split('; ').find(r => r.startsWith('tec_csrf='))?.split('=')?.[1] ?? '';
-
-// ADR-007: check Hub navigation BEFORE any Pi SDK call
-const isHubNavigation = (): boolean =>
-  typeof document !== 'undefined' &&
-  document.referrer.toLowerCase().includes('hub.tecosystem.app');
 
 const getTokenFromCookie = (): string | null =>
   typeof document === 'undefined' ? null :
@@ -167,7 +164,7 @@ function CommercePageInner() {
     const amount = product.price + (product.shipping?.shippingCost ?? 0);
 
     // ADR-007: check Hub navigation FIRST — before any Pi SDK call
-    if (isHubNavigation() || !(window as any).Pi || !piReady) {
+    if (isHubNavigation() || (window as any).__TEC_PI_FOREIGN_SESSION || !(window as any).Pi || !piReady) {
       const params = new URLSearchParams({
         pay:        '1',
         amount:     String(amount),
