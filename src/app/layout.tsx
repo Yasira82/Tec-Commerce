@@ -15,6 +15,14 @@ const piScript  = `(function(){
   function setReady(){window.__TEC_PI_READY=true;window.dispatchEvent(new Event('tec-pi-ready'));}
   function initPi(){
     if(tries++>=40)return;
+    // ADR-007/C-12 §3: Hub-entered = Hub owns this Pi Browser session — never
+    // Pi.init() here (it poisons the session and breaks the Hub PaymentModal).
+    // The SSO landing persists the flag; referrer covers direct hops.
+    try{
+      if(sessionStorage.getItem('__tec_hub_entry')==='1'||document.referrer.toLowerCase().indexOf('hub.tecosystem.app')!==-1){
+        window.__TEC_PI_FOREIGN_SESSION=true;setReady();return;
+      }
+    }catch(e){}
     if(typeof window.Pi==='undefined'){setTimeout(initPi,150);return;}
     try{
       window.Pi.init({version:'2.0',sandbox:${piSandbox},appId:'${piAppId}'});
