@@ -1,4 +1,4 @@
-import { createHandler, GATEWAY_URL } from '@/lib/bff/createHandler';
+import { createHandler, GATEWAY_URL, gatewayGet } from '@/lib/bff/createHandler';
 import { z }                          from 'zod';
 
 const CreateOrderSchema = z.object({
@@ -10,7 +10,7 @@ const CreateOrderSchema = z.object({
 export const GET = createHandler({
   requireAuth: true,
   handler: async ({ ctx, req }) => {
-    const res = await fetch(
+    const res = await gatewayGet(
       `${GATEWAY_URL}/api/v1/commerce/orders?buyer_id=${ctx.userId}`,
       {
         headers: {

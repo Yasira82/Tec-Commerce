@@ -1,4 +1,4 @@
-import { createHandler, GATEWAY_URL } from '@/lib/bff/createHandler';
+import { createHandler, GATEWAY_URL, gatewayGet } from '@/lib/bff/createHandler';
 import { z }                          from 'zod';
 
 const CreateProductSchema = z.object({
@@ -86,7 +86,7 @@ export const GET = createHandler({
     const params = new URLSearchParams({ limit, offset });
     if (category) params.set('category', category);
 
-    const res = await fetch(
+    const res = await gatewayGet(
       `${GATEWAY_URL}/api/v1/commerce/products?${params}`,
       {
         headers: {
