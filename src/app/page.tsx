@@ -10,6 +10,9 @@ const getTokenFromCookie = (): string | null => {
 };
 
 export default function CommerceLanding() {
+  // Fire-and-forget backend warmup (Railway cold starts — see /api/warmup).
+  useEffect(() => { fetch('/api/warmup').catch(() => {}); }, []);
+
   const { isAuthenticated, isLoading } = usePiAuth();
 
   useEffect(() => {
