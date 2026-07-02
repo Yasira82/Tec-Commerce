@@ -60,19 +60,19 @@ export async function POST(req: NextRequest) {
     const refreshAge = 60 * 60 * 24 * 7;
 
     res.cookies.set('tec_access_token', data.tokens.accessToken, {
-      httpOnly: false, secure: true, sameSite: 'none', maxAge, path: '/',
+      httpOnly: false, secure: true, sameSite: 'none', partitioned: true, maxAge, path: '/',
     });
 
     res.cookies.set('tec_refresh_token', data.tokens.refreshToken, {
-      httpOnly: true, secure: true, sameSite: 'none', maxAge: refreshAge, path: '/',
+      httpOnly: true, secure: true, sameSite: 'none', partitioned: true, maxAge: refreshAge, path: '/',
     });
 
     res.cookies.set('tec_user', JSON.stringify(data.user), {
-      httpOnly: false, secure: true, sameSite: 'none', maxAge, path: '/',
+      httpOnly: false, secure: true, sameSite: 'none', partitioned: true, maxAge, path: '/',
     });
 
     res.cookies.set('tec_csrf', randomUUID(), {
-      httpOnly: false, secure: true, sameSite: 'none', maxAge, path: '/',
+      httpOnly: false, secure: true, sameSite: 'none', partitioned: true, maxAge, path: '/',
     });
 
     return res;

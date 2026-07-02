@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
       httpOnly: false,
       secure:   true,
       sameSite: 'none',
+      partitioned: true,
       maxAge:   60 * 60 * 24,
       path:     '/',
     });
