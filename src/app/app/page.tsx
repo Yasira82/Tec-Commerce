@@ -494,5 +494,8 @@ function CommercePageInner() {
 }
 
 export default function CommercePage() {
+  // Fire-and-forget backend warmup (Railway cold starts — see /api/warmup).
+  useEffect(() => { fetch('/api/warmup').catch(() => {}); }, []);
+
   return <ErrorBoundary><CommercePageInner /></ErrorBoundary>;
 }
