@@ -3,11 +3,13 @@
 import { useState }        from 'react';
 import { useRouter }       from 'next/navigation';
 import { Product, ProductCategory, CATEGORY_ICONS } from '../types';
+import { formatUsd } from '@/lib-client/hooks/usePiPrice';
 
 interface Props {
   product:  Product;
   onBuy:    (p: Product) => void;
   isMine:   boolean;
+  piUsd?:   number | null;
   onDelete: (id: string) => void;
   onEdit?:  (p: Product) => void;
 }
@@ -59,7 +61,7 @@ function ContactItem({ icon, value }: { icon: string; value: string }) {
   );
 }
 
-export function ProductCard({ product, onBuy, isMine, onDelete, onEdit }: Props) {
+export function ProductCard({ product, onBuy, isMine, piUsd = null, onDelete, onEdit }: Props) {
   const [imgIdx,   setImgIdx]   = useState(0);
   const [showInfo, setShowInfo] = useState(false);
   const router = useRouter();
@@ -121,6 +123,9 @@ export function ProductCard({ product, onBuy, isMine, onDelete, onEdit }: Props)
           </div>
           <div style={{ textAlign: 'right', flexShrink: 0 }}>
             <div style={{ fontSize: 22, fontWeight: 900, color: GOLD, lineHeight: 1 }}>{product.price}π</div>
+            {formatUsd(product.price, piUsd) && (
+              <div style={{ fontSize: 10, marginTop: 3, color: '#6b6b7a' }}>≈ {formatUsd(product.price, piUsd)} · market</div>
+            )}
             <div style={{ fontSize: 10, marginTop: 3, color: freeShip ? '#10b981' : '#6b6b7a' }}>
               {freeShip ? '✓ Free shipping' : `+${product.shipping.shippingCost}π shipping`}
             </div>
