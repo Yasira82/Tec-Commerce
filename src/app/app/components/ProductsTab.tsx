@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { useRouter }         from 'next/navigation';
 import { Product, ProductCategory, CATEGORIES, CATEGORY_ICONS, COUNTRIES } from '../types';
 import { ProductCard } from './ProductCard';
+import { usePiPrice, formatUsd } from '@/lib-client/hooks/usePiPrice';
 
 type SortKey  = 'newest' | 'price_asc' | 'price_desc' | 'rating';
 type ViewMode = 'grid' | 'list';
@@ -42,9 +43,10 @@ function GridSkeleton() {
   );
 }
 
-function GridCard({ product, isMine, onBuy, onDelete, onEdit }: {
+function GridCard({ product, isMine, piUsd, onBuy, onDelete, onEdit }: {
   product:  Product;
   isMine:   boolean;
+  piUsd:    number | null;
   onBuy:    (p: Product) => void;
   onDelete: (id: string) => void;
   onEdit?:  (p: Product) => void;
@@ -81,7 +83,14 @@ function GridCard({ product, isMine, onBuy, onDelete, onEdit }: {
         <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', lineHeight: 1.3, marginBottom: 4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
           {product.title}
         </div>
-        <div style={{ fontSize: 18, fontWeight: 900, color: GOLD, marginBottom: 4 }}>{product.price}π</div>
+        <div style={{ fontSize: 18, fontWeight: 900, color: GOLD, marginBottom: 4 }}>
+          {product.price}π
+          {formatUsd(product.price, piUsd) && (
+            <span style={{ fontSize: 10, fontWeight: 600, color: '#6b6b7a', marginLeft: 6 }}>
+              ≈ {formatUsd(product.price, piUsd)} · market
+            </span>
+          )}
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontSize: 9, color: '#4a4a5a' }}>📍 {product.shipping.city}</span>
           {product.rating > 0 && <span style={{ fontSize: 9, color: '#f0c040' }}>★ {product.rating.toFixed(1)}</span>}
@@ -173,6 +182,7 @@ function FilterPanel({ show, minPrice, maxPrice, country, onMinPrice, onMaxPrice
 }
 
 export function ProductsTab({ products, userId, dataLoading, onBuy, onDelete, onEdit, onAddFirst }: Props) {
+  const piUsd = usePiPrice(); // live market rate → "≈ $Y" reference next to π prices
   const [search,      setSearch]      = useState('');
   const [category,    setCategory]    = useState<ProductCategory | 'All'>('All');
   const [showMine,    setShowMine]    = useState(false);
@@ -315,13 +325,13 @@ export function ProductsTab({ products, userId, dataLoading, onBuy, onDelete, on
       ) : view === 'grid' ? (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           {paginated.map(p => (
-            <GridCard key={p.id} product={p} isMine={p.sellerId === userId}
+            <GridCard key={p.id} product={p} isMine={p.sellerId === userId} piUsd={piUsd}
               onBuy={onBuy} onDelete={onDelete} onEdit={onEdit} />
           ))}
         </div>
       ) : (
         paginated.map(p => (
-          <ProductCard key={p.id} product={p} isMine={p.sellerId === userId}
+          <ProductCard key={p.id} product={p} isMine={p.sellerId === userId} piUsd={piUsd}
             onBuy={onBuy} onDelete={onDelete} onEdit={onEdit} />
         ))
       )}
