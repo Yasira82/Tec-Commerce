@@ -4,6 +4,7 @@ import { SignJWT }                   from 'jose';
 const ALLOWED_TARGETS = [
   'https://tec-app-frontend.vercel.app', // ✅ Hub
   'https://hub.tecosystem.app',          // ✅ Hub custom domain
+  'https://commerce-app.vercel.app',      // Commerce's real Vercel project host
   'https://tec-commerce-app.vercel.app',
   'https://commerce.tecosystem.app',
 ];
