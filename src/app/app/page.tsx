@@ -19,7 +19,20 @@ import { Icon, type IconName }                       from '@yasser172/tec-ui';
 
 const HUB_URL      = process.env.NEXT_PUBLIC_HUB_URL      ?? 'https://hub.tecosystem.app';
 const COMMERCE_URL = process.env.NEXT_PUBLIC_COMMERCE_URL ?? 'https://commerce.tecosystem.app';
-const SSO_URL      = `${HUB_URL}/api/auth/sso?target=${encodeURIComponent(COMMERCE_URL)}`;
+// The SSO return address must be the host the visitor is ACTUALLY on, read at
+// CLICK time. As a module constant it was frozen to the Mainnet host, so a
+// visitor on the paired Testnet host was handed to the Hub with the wrong
+// return address: the Hub logged them in correctly and returned them to the
+// OTHER origin, where the session then lived. The Testnet host stayed
+// "Unauthorized" with nothing in any log, because nothing failed.
+//
+// Nothing is weakened: this is the origin the page was SERVED from, which a
+// visitor cannot forge, and the Hub validates every target against its own
+// ALLOWED_TARGETS regardless.
+const appOrigin = (): string =>
+  typeof window === 'undefined' ? COMMERCE_URL : window.location.origin;
+const ssoUrl = (): string =>
+  `${HUB_URL}/api/auth/sso?target=${encodeURIComponent(appOrigin())}`;
 
 type Prefs = { theme: 'dark' | 'light'; currency: 'PI' | 'USD'; hideBalance: boolean; language: 'en' | 'ar'; };
 
@@ -134,7 +147,7 @@ function CommercePageInner() {
   useEffect(() => {
     if (isLoading) return;
     const token = getTokenFromCookie();
-    if (!token && !isAuthenticated) { window.location.href = SSO_URL; return; }
+    if (!token && !isAuthenticated) { window.location.href = ssoUrl(); return; }
 
     const params        = new URLSearchParams(window.location.search);
     const paymentStatus = params.get('payment_status');
@@ -171,7 +184,8 @@ function CommercePageInner() {
         memo:       `Buy ${product.title} — TEC Commerce`,
         product_id: product.id,
         source:     'commerce',
-        return_url: `${COMMERCE_URL}/app`,
+        // Back to the host the buyer left, not a build-time constant.
+        return_url: `${appOrigin()}/app`,
       });
       window.location.href = `${HUB_URL}/hub?${params}`;
       return;
