@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { usePiAuth } from '@/lib-client/hooks/usePiAuth';
+import { ssoUrl }    from '@/lib/sso';
 
 const getTokenFromCookie = (): string | null => {
   if (typeof document === 'undefined') return null;
@@ -21,8 +22,12 @@ export default function CommerceLanding() {
     if (token || isAuthenticated) {
       window.location.href = '/app';
     } else {
-      // ✅ زي Assets — روح Hub مباشرة
-      window.location.href = 'https://tec-app-frontend.vercel.app';
+      // Hub SSO carrying THIS host as the return address (src/lib/sso.ts).
+      // It used to be a bare Hub URL with no `target=`, which on the Testnet
+      // host was a one-way trip: host-only cookies mean a visitor never
+      // arrives with a token, so every visit bounced to the Hub and nothing
+      // ever came back.
+      window.location.href = ssoUrl();
     }
   }, [isLoading, isAuthenticated]);
 

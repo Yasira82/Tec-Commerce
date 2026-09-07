@@ -17,22 +17,15 @@ import { isHubNavigation }                          from '@/lib-client/pi/hub-en
 import { PaymentModal, PayStatus }                  from '@yasser172/tec-ui/payment';
 import { Icon, type IconName }                       from '@yasser172/tec-ui';
 
-const HUB_URL      = process.env.NEXT_PUBLIC_HUB_URL      ?? 'https://hub.tecosystem.app';
-const COMMERCE_URL = process.env.NEXT_PUBLIC_COMMERCE_URL ?? 'https://commerce.tecosystem.app';
 // The SSO return address must be the host the visitor is ACTUALLY on, read at
-// CLICK time. As a module constant it was frozen to the Mainnet host, so a
-// visitor on the paired Testnet host was handed to the Hub with the wrong
-// return address: the Hub logged them in correctly and returned them to the
-// OTHER origin, where the session then lived. The Testnet host stayed
-// "Unauthorized" with nothing in any log, because nothing failed.
+// CLICK time — see src/lib/sso.ts. It lives there, not here, so the landing
+// page and this one cannot drift apart: they did, and the landing's bare Hub
+// URL was the half that broke the Testnet host.
 //
 // Nothing is weakened: this is the origin the page was SERVED from, which a
 // visitor cannot forge, and the Hub validates every target against its own
 // ALLOWED_TARGETS regardless.
-const appOrigin = (): string =>
-  typeof window === 'undefined' ? COMMERCE_URL : window.location.origin;
-const ssoUrl = (): string =>
-  `${HUB_URL}/api/auth/sso?target=${encodeURIComponent(appOrigin())}`;
+import { HUB_URL, appOrigin, ssoUrl } from '@/lib/sso';
 
 type Prefs = { theme: 'dark' | 'light'; currency: 'PI' | 'USD'; hideBalance: boolean; language: 'en' | 'ar'; };
 

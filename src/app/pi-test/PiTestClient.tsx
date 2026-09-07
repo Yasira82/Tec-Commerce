@@ -69,7 +69,9 @@ export function PiTestClient() {
   const handleCheckSSO = useCallback(async () => {
     log('info', 'Testing SSO endpoint...');
     try {
-      const res = await fetch('/api/auth/sso?target=https://assets.tecosystem.app', {
+      // Test this app's own origin — the target was a copy-paste leftover
+      // pointing at Assets, so the check exercised a host Commerce never uses.
+      const res = await fetch(`/api/auth/sso?target=${encodeURIComponent(window.location.origin)}`, {
         credentials: 'include', redirect: 'manual',
       });
       log(res.status === 302 || res.status === 307 ? 'success' : 'warn',
