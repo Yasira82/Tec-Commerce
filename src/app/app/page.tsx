@@ -26,6 +26,7 @@ import { Icon, type IconName }                       from '@yasser172/tec-ui';
 // visitor cannot forge, and the Hub validates every target against its own
 // ALLOWED_TARGETS regardless.
 import { HUB_URL, appOrigin, ssoUrl } from '@/lib/sso';
+import { hubPaymentOrigin }            from '@/lib/pi-network';
 
 type Prefs = { theme: 'dark' | 'light'; currency: 'PI' | 'USD'; hideBalance: boolean; language: 'en' | 'ar'; };
 
@@ -180,7 +181,7 @@ function CommercePageInner() {
         // Back to the host the buyer left, not a build-time constant.
         return_url: `${appOrigin()}/app`,
       });
-      window.location.href = `${HUB_URL}/hub?${params}`;
+      window.location.href = `${hubPaymentOrigin(HUB_URL)}/hub?${params}`;
       return;
     }
 
