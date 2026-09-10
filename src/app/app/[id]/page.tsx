@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter }             from 'next/navigation';
 import { Product, CATEGORY_ICONS, ProductCategory } from '../types';
 
+import { hubPaymentOrigin } from '@/lib/pi-network';
+
 const HUB_URL      = process.env.NEXT_PUBLIC_HUB_URL      ?? 'https://hub.tecosystem.app';
 const COMMERCE_URL = process.env.NEXT_PUBLIC_COMMERCE_URL ?? 'https://commerce.tecosystem.app';
 
@@ -154,7 +156,7 @@ export default function ProductDetailPage() {
       return_url: `${COMMERCE_URL}/app`,
       source:     'commerce',
     });
-    window.location.href = `${HUB_URL}/hub?${params}`;
+    window.location.href = `${hubPaymentOrigin(HUB_URL)}/hub?${params}`;
   };
 
   const handleShare = () => {
