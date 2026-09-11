@@ -36,7 +36,7 @@ const piScript  = `(function(){
       // id 1 timed out after 120000ms"). Default false; ?pi_sandbox=1 is the
       // way back in, read ONLY on the Testnet host so no query param can put a
       // Mainnet payment into sandbox mode.
-      var __isTestnetHost=/\\.vercel\\.app$/i.test(location.hostname);
+      var __isTestnetHost=/\\.vercel\\.app$/i.test(location.hostname)||/-test\\.tecosystem\\.app$/i.test(location.hostname);
       var __q=null; try{__q=new URLSearchParams(location.search).get('pi_sandbox');}catch(e){}
       var __sandbox=__isTestnetHost?(__q==='1'):${piSandbox};
       window.__TEC_PI_SANDBOX=__sandbox;
