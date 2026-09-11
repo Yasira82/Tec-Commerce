@@ -1,3 +1,4 @@
+import { HUB_HOSTS } from '@/lib/pi-network';
 import type { Metadata } from 'next';
 import Script                   from 'next/script';
 import { LocaleProvider }       from '@/lib/i18n';
@@ -19,7 +20,9 @@ const piScript  = `(function(){
     // Pi.init() here (it poisons the session and breaks the Hub PaymentModal).
     // The SSO landing persists the flag; referrer covers direct hops.
     try{
-      if(sessionStorage.getItem('__tec_hub_entry')==='1'||document.referrer.toLowerCase().indexOf('hub.tecosystem.app')!==-1){
+      var __hubHosts=${JSON.stringify(HUB_HOSTS)};var __fromHub=false;
+      try{__fromHub=!!document.referrer&&__hubHosts.indexOf(new URL(document.referrer).hostname.toLowerCase())!==-1;}catch(e){}
+      if(sessionStorage.getItem('__tec_hub_entry')==='1'||__fromHub){
         window.__TEC_PI_FOREIGN_SESSION=true;setReady();return;
       }
     }catch(e){}
@@ -33,7 +36,7 @@ const piScript  = `(function(){
       // id 1 timed out after 120000ms"). Default false; ?pi_sandbox=1 is the
       // way back in, read ONLY on the Testnet host so no query param can put a
       // Mainnet payment into sandbox mode.
-      var __isTestnetHost=/\\.vercel\\.app$/i.test(location.hostname);
+      var __isTestnetHost=/\\.vercel\\.app$/i.test(location.hostname)||/-test\\.tecosystem\\.app$/i.test(location.hostname);
       var __q=null; try{__q=new URLSearchParams(location.search).get('pi_sandbox');}catch(e){}
       var __sandbox=__isTestnetHost?(__q==='1'):${piSandbox};
       window.__TEC_PI_SANDBOX=__sandbox;
