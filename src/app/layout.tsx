@@ -1,3 +1,4 @@
+import { HUB_HOSTS } from '@/lib/pi-network';
 import type { Metadata } from 'next';
 import Script                   from 'next/script';
 import { LocaleProvider }       from '@/lib/i18n';
@@ -19,7 +20,9 @@ const piScript  = `(function(){
     // Pi.init() here (it poisons the session and breaks the Hub PaymentModal).
     // The SSO landing persists the flag; referrer covers direct hops.
     try{
-      if(sessionStorage.getItem('__tec_hub_entry')==='1'||document.referrer.toLowerCase().indexOf('hub.tecosystem.app')!==-1){
+      var __hubHosts=${JSON.stringify(HUB_HOSTS)};var __fromHub=false;
+      try{__fromHub=!!document.referrer&&__hubHosts.indexOf(new URL(document.referrer).hostname.toLowerCase())!==-1;}catch(e){}
+      if(sessionStorage.getItem('__tec_hub_entry')==='1'||__fromHub){
         window.__TEC_PI_FOREIGN_SESSION=true;setReady();return;
       }
     }catch(e){}
