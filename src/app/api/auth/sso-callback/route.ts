@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomUUID }                from 'crypto';
 import { jwtVerify }                 from 'jose';
 import { cookieDomainFor }           from '@/lib/cookie-domain';
 import { HUB_HOSTS }                 from '@/lib/pi-network';
@@ -72,7 +73,7 @@ export async function GET(req: NextRequest) {
   const user        = payload.user as Record<string, unknown>;
   if (!accessToken || !user) return NextResponse.redirect(new URL('/', req.url));
 
-  const csrf = crypto.randomUUID();
+  const csrf = randomUUID();
 
   // Host-only wherever the configured domain does not cover this host — see
   // cookie-domain.ts. A Domain the host is not under is rejected silently.

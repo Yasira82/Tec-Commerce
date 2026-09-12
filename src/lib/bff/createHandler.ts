@@ -1,5 +1,6 @@
 import { z }           from 'zod';
 import { NextRequest }  from 'next/server';
+import { randomUUID } from 'crypto';
 import { jwtVerify }   from 'jose';
 
 export class AppError extends Error {
@@ -52,7 +53,7 @@ async function extractContext(req: NextRequest): Promise<BFFContext> {
     return {
       userId,
       kycVerified: (payload as Record<string, unknown>).kycVerified === true,
-      requestId:   req.headers.get('x-request-id') ?? crypto.randomUUID(),
+      requestId:   req.headers.get('x-request-id') ?? randomUUID(),
     };
   } catch (err) {
     console.error('[BFF] JWT error:', (err as Error).message);
@@ -77,7 +78,7 @@ export function createHandler<TInput = Record<string, never>, TOutput = unknown>
     let ctx: BFFContext = {
       userId:      'anonymous',
       kycVerified: false,
-      requestId:   crypto.randomUUID(),
+      requestId:   randomUUID(),
     };
 
     try {
