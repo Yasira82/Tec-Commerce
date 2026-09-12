@@ -18,6 +18,7 @@ const ALLOWED_AUDIENCES = [
   'https://commerce-app.vercel.app',
   'https://tec-commerce-app.vercel.app',
   'https://commerce.tecosystem.app',
+  'https://commerce-test.tecosystem.app',
 ];
 const DEFAULT_REDIRECT = '/app';
 
