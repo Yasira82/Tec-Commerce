@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomUUID }                from 'crypto';
 import { z } from 'zod';
 import { networkMetadata } from '@/lib/pi-network';
 
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
     headers: {
       'Content-Type':    'application/json',
       Authorization:     `Bearer ${token}`,
-      'Idempotency-Key': crypto.randomUUID(),
+      'Idempotency-Key': randomUUID(),
       ...(process.env.INTERNAL_SECRET && { 'x-internal-key': process.env.INTERNAL_SECRET }),
     },
     body: JSON.stringify({

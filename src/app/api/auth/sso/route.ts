@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomUUID }                from 'crypto';
 import { SignJWT }                   from 'jose';
 
 const ALLOWED_TARGETS = [
@@ -29,7 +30,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const user    = JSON.parse(decodeURIComponent(userCookie));
-    const jti     = crypto.randomUUID();
+    const jti     = randomUUID();
     const encoded = new TextEncoder().encode(secret);
 
     const token = await new SignJWT({ accessToken, user })
