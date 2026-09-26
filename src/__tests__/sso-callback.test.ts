@@ -53,9 +53,12 @@ describe('SSO Callback', () => {
     // C-123 LAW 2: cookies ride a 200 HTML landing page, never a 3xx.
     expect(res1.status).toBe(200);
 
+    // Still refused — no session is made from a used token — but the visit
+    // carries on to the page instead of a JSON dead end (C-123 §12).
     const req2 = makeRequest('https://tec-assets.vercel.app/api/auth/sso-callback?token=valid');
     const res2 = await GET(req2 as any);
-    expect(res2.status).toBe(401);
+    expect(res2.status).toBe(307);
+    expect(res2.headers.get('set-cookie')).toBeNull();
   });
 
   it('sets cookies on valid token', async () => {
