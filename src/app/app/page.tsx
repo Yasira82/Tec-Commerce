@@ -27,6 +27,7 @@ import { Icon, type IconName }                       from '@yasser172/tec-ui';
 // ALLOWED_TARGETS regardless.
 import { HUB_URL, appOrigin, ssoUrl } from '@/lib/sso';
 import { hubPaymentOrigin }            from '@/lib/pi-network';
+import { piVisitSignIn } from '@/lib/pi/visit-sign-in';
 
 type Prefs = { theme: 'dark' | 'light'; currency: 'PI' | 'USD'; hideBalance: boolean; language: 'en' | 'ar'; };
 
@@ -74,9 +75,11 @@ function CommercePageInner() {
     return () => window.removeEventListener('tec-pi-ready', h);
   }, []);
 
+  // The visit sign-in now runs on every page from the layout (PiVisitSignIn);
+  // joining it here keeps this page from starting a second handshake.
   useEffect(() => {
-    if (!piReady || (window as any).__TEC_PI_FOREIGN_SESSION) return;
-    window.Pi?.authenticate(['username'], () => {}).catch(() => {});
+    if (!piReady) return;
+    void piVisitSignIn();
   }, [piReady]);
 
   const isDark = prefs.theme === 'dark';
