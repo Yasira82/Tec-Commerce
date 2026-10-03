@@ -6,13 +6,14 @@ import { ErrorBoundary }                            from '@/components/ErrorBoun
 import { CommerceSkeleton }                         from './components/CommerceSkeleton';
 import { ProductsTab }                              from './components/ProductsTab';
 import { OrdersTab }                                from './components/OrdersTab';
+import { settleHubHoldOnReturn }                    from '@/lib-client/orders/hub-hold';
 import { SalesSummary }                             from './components/SalesSummary';
 import { AddProductForm }                           from './components/AddProductForm';
 import { EditProductModal }                         from './components/EditProductModal';
 import { SellerOrderCard }                          from './components/SellerOrderCard';
 import { CommerceDrawer }                           from './components/CommerceDrawer';
 import { Product, Order, MainTab }                  from './types';
-import { createPaymentRecord, createU2APayment }    from '@/lib/pi-payment';
+import { createPaymentRecord, createU2APayment, takePaymentRecordRefusal, holdForHub, recordPaidOrder, releaseHeldOrder }    from '@/lib/pi-payment';
 // ADR-007/C-12 §3: flag-aware (sessionStorage OR referrer) — see hub-entry.ts
 import { isHubNavigation }                          from '@/lib-client/pi/hub-entry';
 import { PaymentModal, PayStatus }                  from '@yasser172/tec-ui/payment';
@@ -150,12 +151,15 @@ function CommercePageInner() {
     const params        = new URLSearchParams(window.location.search);
     const paymentStatus = params.get('payment_status');
 
-    if (paymentStatus === 'success') {
+    // Back from the Hub. If this tab held the unit before going (holdForHub), that
+    // hold is confirmed (success) or released (Cancel returns with no status) —
+    // never a second order for the same unit. Without a hold, the old path.
+    void settleHubHoldOnReturn(window.location.search).then((settled) => {
+      if (settled !== 'none') { fetchOrders(); fetchProducts(); }
+      if (settled !== 'none' || paymentStatus !== 'success') return;
       const productId = params.get('product_id') ?? '';
       const txid      = params.get('txid')       ?? '';
       const paymentId = params.get('payment_id') ?? '';
-      showToast('Payment successful! 🎉');
-      setActiveTab('orders');
       if (productId) {
         fetch('/api/bff/commerce/orders', {
           method: 'POST', credentials: 'include',
@@ -165,9 +169,14 @@ function CommercePageInner() {
           console.error('[commerce] order creation failed after Hub redirect:', err);
         });
       }
+    });
+
+    if (paymentStatus === 'success') {
+      showToast('Payment successful! 🎉');
+      setActiveTab('orders');
       window.history.replaceState({}, '', '/app');
     }
-  }, [isLoading, isAuthenticated, showToast, fetchOrders]);
+  }, [isLoading, isAuthenticated, showToast, fetchOrders, fetchProducts]);
 
   // ADR-007 compliant handleBuy
   const handleBuy = useCallback(async (product: Product) => {
@@ -176,6 +185,15 @@ function CommercePageInner() {
 
     // ADR-007: check Hub navigation FIRST — before any Pi SDK call
     if (isHubNavigation() || (window as any).__TEC_PI_FOREIGN_SESSION || !(window as any).Pi || !piReady) {
+      // Hold the unit first; the order_id rides to the Hub, into the payment.
+      inFlight.current = true;
+      const held = await holdForHub(amount, product.id);
+      inFlight.current = false;
+      if ('refusal' in held) {
+        setActiveProd(product); setPayStatus('error'); setPayMessage(held.refusal);
+        fetchProducts();
+        return;
+      }
       const params = new URLSearchParams({
         pay:        '1',
         amount:     String(amount),
@@ -184,6 +202,7 @@ function CommercePageInner() {
         source:     'commerce',
         // Back to the host the buyer left, not a build-time constant.
         return_url: `${appOrigin()}/app`,
+        ...(held.orderId ? { order_id: held.orderId } : {}),
       });
       window.location.href = `${hubPaymentOrigin(HUB_URL)}/hub?${params}`;
       return;
@@ -200,8 +219,10 @@ function CommercePageInner() {
       const internalId = await createPaymentRecord(amount, product.id, memo);
 
       if (!internalId) {
+        const why = takePaymentRecordRefusal();
         setPayStatus('error');
-        setPayMessage('Failed to initialize payment.');
+        setPayMessage(why ?? 'Failed to initialize payment.');
+        if (why) fetchProducts();   // sold out / price changed — show the fresh state
         inFlight.current = false;
         return;
       }
@@ -215,16 +236,14 @@ function CommercePageInner() {
       );
 
       if (result.success) {
-        fetch('/api/bff/commerce/orders', {
-          method: 'POST', credentials: 'include',
-          headers: { 'Content-Type': 'application/json', 'x-csrf-token': getCsrfToken() },
-          body: JSON.stringify({ product_id: product.id, payment_id: internalId }),
-        }).then(() => fetchOrders()).catch((err) => {
-          console.error('[commerce] order creation failed:', err);
-        });
+        recordPaidOrder(internalId, product.id, result.txid)
+          .then(() => { fetchOrders(); fetchProducts(); })
+          .catch((err) => { console.error('[commerce] order settle failed:', err); });
         setPayStatus('success');
         showToast('Payment successful! 🎉');
       } else {
+        // Not completed here — give the unit back now, not after the hold's TTL.
+        void releaseHeldOrder(internalId).then(() => fetchProducts());
         setPayStatus(result.status === 'cancelled' ? 'cancelled' : 'error');
         setPayMessage(result.message ?? '');
       }
@@ -234,7 +253,7 @@ function CommercePageInner() {
     } finally {
       inFlight.current = false;
     }
-  }, [showToast, fetchOrders, piReady]);
+  }, [showToast, fetchOrders, fetchProducts, piReady]);
 
   const closePayModal = () => {
     setPayStatus('idle');
