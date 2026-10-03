@@ -6,6 +6,7 @@ import { ErrorBoundary }                            from '@/components/ErrorBoun
 import { CommerceSkeleton }                         from './components/CommerceSkeleton';
 import { ProductsTab }                              from './components/ProductsTab';
 import { OrdersTab }                                from './components/OrdersTab';
+import { SalesSummary }                             from './components/SalesSummary';
 import { AddProductForm }                           from './components/AddProductForm';
 import { EditProductModal }                         from './components/EditProductModal';
 import { SellerOrderCard }                          from './components/SellerOrderCard';
@@ -432,6 +433,7 @@ function CommercePageInner() {
         )}
         {activeTab === 'sales' && (
           <div>
+            <SalesSummary refreshKey={sellerOrders.length} />
             {sellerOrders.length === 0 ? (
               <div style={{ textAlign: 'center', padding: 40 }}>
                 <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}><Icon name="chart" size={40} color="#4a4a5a" strokeWidth={1.5} /></div>
