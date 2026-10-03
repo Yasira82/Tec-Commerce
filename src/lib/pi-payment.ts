@@ -1,3 +1,5 @@
+import { rememberHubHold } from '@/lib-client/orders/hub-hold';
+
 const getCsrfToken = (): string =>
   typeof document === 'undefined' ? '' :
   document.cookie.split('; ').find(r => r.startsWith('tec_csrf='))?.split('=')?.[1] ?? '';
@@ -14,9 +16,87 @@ export interface PaymentResult {
   message?:   string;
 }
 
+/**
+ * The order each payment record reserved (payment-id → order-id). The server holds
+ * the unit BEFORE Pi opens (lib/order-hold.ts) and names the hold in its answer; the
+ * buy screen then confirms THAT order after paying, or releases it when the payment
+ * does not complete — instead of creating an order after the money has moved.
+ */
+const heldOrders = new Map<string, string>();
+export const heldOrderFor = (paymentId: string): string | undefined => heldOrders.get(paymentId);
+
+/**
+ * Why the last `createPaymentRecord` returned null, when the server said why —
+ * "out of stock", "no longer available", "price changed". Read once.
+ */
+let lastRefusal: string | null = null;
+export const takePaymentRecordRefusal = (): string | null => {
+  const r = lastRefusal; lastRefusal = null; return r;
+};
+
+/** The payment did not complete here (Cancel, error, timeout): put the held unit
+ *  back on sale now. Conditional in commerce — a hold already PAID stays paid. */
+export const releaseHeldOrder = async (paymentId: string): Promise<void> => {
+  const orderId = heldOrders.get(paymentId);
+  if (!orderId) return;
+  heldOrders.delete(paymentId);
+  try {
+    await fetch(`/api/bff/commerce/orders/${encodeURIComponent(orderId)}/cancel`, {
+      method: 'PATCH', credentials: 'include',
+      headers: { 'Content-Type': 'application/json', 'x-csrf-token': getCsrfToken() },
+    });
+  } catch { /* commerce releases an unpaid hold on its own after the TTL */ }
+};
+
+/**
+ * After a completed Pi payment: settle the order it paid for — a CONFIRM of the held
+ * order, or (older server, no hold) the order created as before. The payment's own
+ * event settles a held order even if this call never arrives.
+ */
+export const recordPaidOrder = async (paymentId: string, productId: string, txid?: string): Promise<void> => {
+  const order_id = heldOrders.get(paymentId);
+  heldOrders.delete(paymentId);
+  await fetch('/api/bff/commerce/orders', {
+    method: 'POST', credentials: 'include',
+    headers: { 'Content-Type': 'application/json', 'x-csrf-token': getCsrfToken() },
+    body: JSON.stringify(order_id
+      ? { order_id, payment_id: paymentId }
+      : { product_id: productId, payment_id: paymentId, ...(txid && { txid }) }),
+  });
+};
+
+/**
+ * Mode 1 (paying at the Hub): reserve first, so the Hub is never asked to take π for
+ * a unit someone else already has. The order to carry to the Hub (null when the
+ * server has no holds yet, or there is no session here — the Hub flow then runs as
+ * before), or why it was refused.
+ */
+export const holdForHub = async (
+  amount: number, productId: string,
+): Promise<{ orderId: string | null } | { refusal: string }> => {
+  try {
+    const res = await fetch('/api/bff/commerce/orders/hold', {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json', 'x-csrf-token': getCsrfToken() },
+      body: JSON.stringify({ amount, product_id: productId }),
+    });
+    const body = await res.json().catch(() => null) as { message?: unknown; data?: { order_id?: unknown } } | null;
+    if (res.status === 409 || res.status === 503) {
+      return { refusal: typeof body?.message === 'string' ? body.message : 'This product is not available right now.' };
+    }
+    const id = body?.data?.order_id;
+    const orderId = res.ok && typeof id === 'string' ? id : null;
+    if (orderId) rememberHubHold(orderId);
+    return { orderId };
+  } catch {
+    return { orderId: null };
+  }
+};
+
 export const createPaymentRecord = async (
   amount: number, productId: string, memo: string,
 ): Promise<string | null> => {
+  lastRefusal = null;
   try {
     const token = getToken();
     const res   = await fetch('/api/bff/payment/create', {
@@ -29,9 +109,17 @@ export const createPaymentRecord = async (
       },
       body: JSON.stringify({ amount, product_id: productId, memo, source: 'commerce' }),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const body = await res.json().catch(() => null) as { message?: unknown } | null;
+      if (res.status === 409 || res.status === 503) {
+        lastRefusal = typeof body?.message === 'string' ? body.message : null;
+      }
+      return null;
+    }
     const data = await res.json();
-    return data?.data?.payment?.id ?? data?.id ?? null;
+    const id: string | null = data?.data?.payment?.id ?? data?.id ?? null;
+    if (id && typeof data?.order_id === 'string') heldOrders.set(id, data.order_id);
+    return id;
   } catch { return null; }
 };
 
