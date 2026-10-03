@@ -1,17 +1,26 @@
-import { createHandler, GATEWAY_URL } from '@/lib/bff/createHandler';
+import { createHandler, GATEWAY_URL, AppError } from '@/lib/bff/createHandler';
 import { z }                          from 'zod';
 
+// PATCH /api/bff/commerce/orders/:id/status — the seller ships, then delivers.
+// commerce-service holds the rule (PAID → SHIPPED → DELIVERED, sole seller only,
+// conditional on the status seen); this route only carries the request. It used to
+// call a route that did not exist, so "Mark Shipped" never moved any order.
+// No seller cancel: cancelling a PAID order is a refund — payment-service's.
+
 const UpdateStatusSchema = z.object({
-  status: z.enum(['confirmed', 'shipped', 'delivered', 'cancelled']),
-  note:   z.string().optional(),
+  status: z.enum(['shipped', 'delivered']),
+  note:   z.string().max(500).optional(),
 });
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const PATCH = createHandler({
   requireAuth: true,
   schema:      UpdateStatusSchema,
   handler: async ({ input, ctx, req }) => {
-    const id  = req.url.split('/orders/')[1]?.split('/status')[0] ?? '';
-    const res = await fetch(`${GATEWAY_URL}/api/v1/commerce/orders/${id}/status`, {
+    const id = req.nextUrl.pathname.split('/orders/')[1]?.split('/status')[0] ?? '';
+    if (!UUID.test(id)) throw new AppError('Invalid order id', 400, 'VALIDATION_ERROR');
+    const res = await fetch(`${GATEWAY_URL}/api/commerce/orders/${encodeURIComponent(id)}/status`, {
       method: 'PATCH',
       headers: {
         'Content-Type':   'application/json',
@@ -19,17 +28,10 @@ export const PATCH = createHandler({
         'x-request-id':   ctx.requestId,
         ...(process.env.INTERNAL_SECRET && { 'x-internal-key': process.env.INTERNAL_SECRET }),
       },
-      body: JSON.stringify({
-        seller_id: ctx.userId,
-        status:    input.status.toUpperCase(),
-        note:      input.note,
-      }),
+      body: JSON.stringify({ status: input.status.toUpperCase(), note: input.note }),
     });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error((err as { message?: string }).message ?? 'Failed to update status');
-    }
-    const data = await res.json();
-    return { order: data?.data?.order ?? data?.data };
+    const data = await res.json().catch(() => ({})) as { message?: string; data?: { order?: unknown } };
+    if (!res.ok) throw new AppError(data.message ?? 'Failed to update status', res.status, 'STATUS_UPDATE_FAILED');
+    return { order: data.data?.order ?? null };
   },
 });

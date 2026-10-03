@@ -297,7 +297,12 @@ function CommercePageInner() {
         body: JSON.stringify({ status, note }),
       });
       if (res.ok) { showToast('Order updated ✅'); fetchSellerOrders(); }
-      else showToast('Failed to update', 'error');
+      else {
+        // commerce says why (already shipped, shared cart, …) — show it, and the fresh list.
+        const body = await res.json().catch(() => null) as { message?: string } | null;
+        showToast(body?.message ?? 'Failed to update', 'error');
+        fetchSellerOrders();
+      }
     } catch { showToast('Failed to update', 'error'); }
   }, [fetchSellerOrders, showToast]);
 
@@ -311,7 +316,8 @@ function CommercePageInner() {
   if (isLoading || (!isAuthenticated && !token)) return <CommerceSkeleton />;
 
   const myProductsCount = products.filter(p => p.sellerId === user?.id).length;
-  const pendingSales    = sellerOrders.filter(o => o.status === 'pending').length;
+  // Paid orders waiting for the seller to ship them.
+  const pendingSales    = sellerOrders.filter(o => o.status === 'paid').length;
 
   return (
     <div style={{
@@ -465,7 +471,7 @@ function CommercePageInner() {
             ) : (
               <>
                 <div style={{ fontSize: 10, color: '#4a4a5a', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700, marginBottom: 12 }}>
-                  {sellerOrders.length} SALES · {pendingSales} PENDING
+                  {sellerOrders.length} SALES · {pendingSales} TO SHIP
                 </div>
                 {sellerOrders.map(o => (
                   <SellerOrderCard key={o.id} order={o} onUpdate={handleStatusUpdate} />
