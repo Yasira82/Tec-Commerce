@@ -8,7 +8,7 @@ const makeOrder = (overrides: Partial<Order> = {}): Order => ({
   id:         'order-001',
   product_id: 'prod-001',
   buyer_id:   'buyer-001',
-  status:     'pending',
+  status:     'paid',
   total:      100,
   payment_id: 'pay-001',
   createdAt:  new Date().toISOString(),
@@ -33,12 +33,12 @@ describe('SellerOrderCard', () => {
     expect(screen.getByText(/#ORDER-00/i)).toBeDefined();
   });
 
-  it('يعرض status pending', () => {
+  it('يعرض status paid — the order to ship', () => {
     render(React.createElement(SellerOrderCard, { order: makeOrder(), onUpdate: vi.fn() }));
-    expect(screen.getByText(/pending/i)).toBeDefined();
+    expect(screen.getByText(/to ship/i)).toBeDefined();
   });
 
-  it('يعرض "Action needed" للـ pending orders', () => {
+  it('يعرض "Action needed" للـ paid orders', () => {
     render(React.createElement(SellerOrderCard, { order: makeOrder(), onUpdate: vi.fn() }));
     expect(screen.getByText(/action needed/i)).toBeDefined();
   });
@@ -48,17 +48,12 @@ describe('SellerOrderCard', () => {
     expect(screen.queryByText(/action needed/i)).toBeNull();
   });
 
-  it('بيعرض action buttons لما يفتح', () => {
+  it('a paid order is shipped — and there is NO seller cancel (a refund is payment-service\'s)', () => {
     render(React.createElement(SellerOrderCard, { order: makeOrder(), onUpdate: vi.fn() }));
     fireEvent.click(screen.getByText('My Product').closest('button')!);
-    expect(screen.getByText(/confirm order/i)).toBeDefined();
-    expect(screen.getByText(/cancel order/i)).toBeDefined();
-  });
-
-  it('بيعرض Shipped button للـ confirmed orders', () => {
-    render(React.createElement(SellerOrderCard, { order: makeOrder({ status: 'confirmed' }), onUpdate: vi.fn() }));
-    fireEvent.click(screen.getByText('My Product').closest('button')!);
     expect(screen.getByText(/mark shipped/i)).toBeDefined();
+    expect(screen.queryByText(/cancel order/i)).toBeNull();
+    expect(screen.queryByText(/confirm order/i)).toBeNull();
   });
 
   it('بيعرض Delivered button للـ shipped orders', () => {
@@ -70,40 +65,25 @@ describe('SellerOrderCard', () => {
   it('مش بيعرض action buttons للـ delivered orders', () => {
     render(React.createElement(SellerOrderCard, { order: makeOrder({ status: 'delivered' }), onUpdate: vi.fn() }));
     fireEvent.click(screen.getByText('My Product').closest('button')!);
-    expect(screen.queryByText(/confirm/i)).toBeNull();
+    expect(screen.queryByText(/mark /i)).toBeNull();
   });
 
-  it('Confirm Order يستدعي onUpdate بـ confirmed', async () => {
+  it('a cart shared with another seller: no actions, and it says why', () => {
+    render(React.createElement(SellerOrderCard, { order: makeOrder({ soleSeller: false }), onUpdate: vi.fn() }));
+    expect(screen.queryByText(/action needed/i)).toBeNull();
+    fireEvent.click(screen.getByText('My Product').closest('button')!);
+    expect(screen.queryByText(/mark shipped/i)).toBeNull();
+    expect(screen.getByText(/another seller/i)).toBeDefined();
+  });
+
+  it('Mark Shipped يعرض note modal للـ tracking، ثم يستدعي onUpdate', async () => {
     const onUpdate = vi.fn().mockResolvedValue(undefined);
     render(React.createElement(SellerOrderCard, { order: makeOrder(), onUpdate }));
-    fireEvent.click(screen.getByText('My Product').closest('button')!);
-    fireEvent.click(screen.getByText(/confirm order/i));
-    // ✅ بدون undefined — الـ function بتتكلم بـ 2 args بس
-    await waitFor(() => { expect(onUpdate).toHaveBeenCalledWith('order-001', 'confirmed'); });
-  });
-
-  it('Cancel Order يعرض note modal', () => {
-    render(React.createElement(SellerOrderCard, { order: makeOrder(), onUpdate: vi.fn() }));
-    fireEvent.click(screen.getByText('My Product').closest('button')!);
-    fireEvent.click(screen.getByText(/cancel order/i));
-    expect(screen.getByPlaceholderText(/reason/i)).toBeDefined();
-  });
-
-  it('Cancel يستدعي onUpdate بعد confirm', async () => {
-    const onUpdate = vi.fn().mockResolvedValue(undefined);
-    render(React.createElement(SellerOrderCard, { order: makeOrder(), onUpdate }));
-    fireEvent.click(screen.getByText('My Product').closest('button')!);
-    fireEvent.click(screen.getByText(/cancel order/i));
-    fireEvent.change(screen.getByPlaceholderText(/reason/i), { target: { value: 'Out of stock' } });
-    fireEvent.click(screen.getByText('Confirm'));
-    await waitFor(() => { expect(onUpdate).toHaveBeenCalledWith('order-001', 'cancelled', 'Out of stock'); });
-  });
-
-  it('Mark Shipped يعرض note modal للـ tracking', () => {
-    render(React.createElement(SellerOrderCard, { order: makeOrder({ status: 'confirmed' }), onUpdate: vi.fn() }));
     fireEvent.click(screen.getByText('My Product').closest('button')!);
     fireEvent.click(screen.getByText(/mark shipped/i));
-    expect(screen.getByPlaceholderText(/tracking/i)).toBeDefined();
+    fireEvent.change(screen.getByPlaceholderText(/tracking/i), { target: { value: 'Aramex 9' } });
+    fireEvent.click(screen.getByText('Confirm'));
+    await waitFor(() => { expect(onUpdate).toHaveBeenCalledWith('order-001', 'shipped', 'Aramex 9'); });
   });
 
   it('بيعرض buyer contact info', () => {
