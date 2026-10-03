@@ -48,23 +48,11 @@ export const usePiAuth = () => {
       })
       .catch(() => { /* fail closed — keep cookie-derived state */ });
 
-    // ✅ Silent Pi authenticate — required for createPayment
-    // Tec-Assets uses SSO cookies — Pi SDK doesn't know the user
-    // We must call authenticate() so Pi SDK can accept createPayment()
-    if (!stored) return;
-
-    const doSilentAuth = async () => {
-      try {
-        if (typeof window === 'undefined' || !window.Pi) return;
-        await window.Pi.authenticate(['username', 'payments'], () => {});
-      } catch { /* silent — user already authenticated via SSO */ }
-    };
-
-    if (window.__TEC_PI_READY) {
-      doSilentAuth();
-    } else {
-      window.addEventListener('tec-pi-ready', doSilentAuth, { once: true });
-    }
+    // No Pi handshake here. PiVisitSignIn (app/layout.tsx) signs the visitor in
+    // with Pi once per page load — skipped in a Hub-owned session (ADR-007) — and
+    // the payment authenticates again at the tap. A second call here ran at the
+    // same moment as that one, and Pi Browser answers neither of two concurrent
+    // authenticate calls (owner decision, 2026-10-03).
   }, []);
 
   const logout = useCallback(async () => {
