@@ -110,4 +110,19 @@ describe('PayoutDesk (admin)', () => {
     await waitFor(() => expect(screen.getByText(/No payout address yet/)).toBeTruthy());
     expect(screen.queryByText('Mark sent')).toBeNull();
   });
+
+  it('"my own sales settle" updates "Your payouts" at once, without a reload', async () => {
+    const f = vi.fn(async (url: RequestInfo | URL) => {
+      const u = String(url);
+      if (u.includes('/queue')) return res({ payouts: [] });
+      if (u.endsWith('/direct')) return res({ settled: 0 });
+      return res(mine({ direct: f.mock.calls.some((c) => String(c[0]).endsWith('/direct')), payouts: [] }));
+    });
+    vi.stubGlobal('fetch', f);
+    vi.stubGlobal('confirm', () => true);
+    render(<><PayoutDesk /><PayoutsPanel /></>);
+    fireEvent.click(await screen.findByText('My own sales settle into my wallet'));
+    await waitFor(() => expect(screen.getByText(/settle directly into your own wallet/)).toBeTruthy());
+    expect(screen.getByText(/Done — your own sales settle into your wallet from now on/)).toBeTruthy();
+  });
 });
