@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import type { Payout } from '@/lib/bff/payouts';
+import { PAYOUTS_CHANGED } from './PayoutsPanel';
 
 // The admin's payout desk (F2, #78): who is owed, how much, and where to send it.
 // Until TEC's own A2U wallet exists, a payout is sent by hand from a wallet and
@@ -38,6 +39,7 @@ function Row({ p, onDone }: { p: Payout; onDone: () => void }) {
       });
       const body = await res.json().catch(() => ({})) as { message?: string };
       if (!res.ok) { setError(body.message || 'Not recorded.'); return; }
+      window.dispatchEvent(new Event(PAYOUTS_CHANGED));
       onDone();
     } catch {
       setError('Could not reach the server. Nothing was recorded — try again.');
@@ -108,7 +110,10 @@ export function PayoutDesk() {
     try {
       const res = await fetch('/api/bff/commerce/payouts/direct', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', 'x-csrf-token': csrf() }, body: '{}' });
       const body = await res.json().catch(() => ({})) as { settled?: number; message?: string };
-      setNote(res.ok ? `${body.settled ?? 0} of your own payout(s) marked settled.` : body.message || 'Not changed.');
+      setNote(res.ok
+        ? `Done — your own sales settle into your wallet from now on${body.settled ? ` (${body.settled} payout(s) marked settled)` : ''}.`
+        : body.message || 'Not changed.');
+      if (res.ok) window.dispatchEvent(new Event(PAYOUTS_CHANGED)); // "Your payouts" below updates now, not on reload
       load();
     } finally {
       setSettling(false);

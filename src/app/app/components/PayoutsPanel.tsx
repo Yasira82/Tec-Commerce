@@ -23,6 +23,9 @@ const csrf = (): string =>
 const short = (s: string) => (s.length > 14 ? `${s.slice(0, 6)}…${s.slice(-6)}` : s);
 const what = (p: Payout) => (p.source === 'asset_listing' ? 'NFT sale' : 'Order');
 
+/** The admin desk changes what this panel shows (Direct, Mark sent) — it says so with this event. */
+export const PAYOUTS_CHANGED = 'tec-payouts-changed';
+
 const STATUS: Record<Payout['status'], { label: string; color: string }> = {
   OWED:   { label: 'Owed · not sent yet', color: '#FBBF24' },
   SENT:   { label: 'Sent',                color: '#22C55E' },
@@ -44,6 +47,10 @@ export function PayoutsPanel({ refreshKey = 0 }: { refreshKey?: number }) {
   }, []);
 
   useEffect(() => { load(); }, [load, refreshKey]);
+  useEffect(() => {
+    window.addEventListener(PAYOUTS_CHANGED, load);
+    return () => window.removeEventListener(PAYOUTS_CHANGED, load);
+  }, [load]);
 
   if (!data) return null;
 
