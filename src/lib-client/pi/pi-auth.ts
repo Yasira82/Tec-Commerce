@@ -1,5 +1,6 @@
 import { PiAuthResult, TecAuthResponse, PiPaymentData, PiPaymentCallbacks } from '@/types/pi.types';
 import sdk from '@/lib/sdk';
+import { markPiSignedIn } from '@/lib/pi/visit-sign-in';
 
 declare global {
   interface Window {
@@ -280,6 +281,7 @@ export const loginWithPi = async (): Promise<TecAuthResponse> => {
   if (!isPiBrowser()) throw new Error(ERRORS.NOT_PI_BROWSER);
   _pendingPaymentId = null;
   const piAuth = await authenticateWithTimeout();
+  markPiSignedIn(); // F3: a Pi sign-in in this app — the arrival may now be counted
   const res = await fetch('/api/auth/pi-login', {
     method: 'POST', credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
