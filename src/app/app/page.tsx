@@ -8,6 +8,8 @@ import { ProductsTab }                              from './components/ProductsT
 import { OrdersTab }                                from './components/OrdersTab';
 import { settleHubHoldOnReturn }                    from '@/lib-client/orders/hub-hold';
 import { SalesSummary }                             from './components/SalesSummary';
+import { PayoutsPanel }                             from './components/PayoutsPanel';
+import { PayoutDesk }                               from './components/PayoutDesk';
 import { AddProductForm }                           from './components/AddProductForm';
 import { EditProductModal }                         from './components/EditProductModal';
 import { SellerOrderCard }                          from './components/SellerOrderCard';
@@ -458,7 +460,9 @@ function CommercePageInner() {
         )}
         {activeTab === 'sales' && (
           <div>
+            <PayoutDesk />
             <SalesSummary refreshKey={sellerOrders.length} />
+            <PayoutsPanel refreshKey={sellerOrders.length} />
             {sellerOrders.length === 0 ? (
               <div style={{ textAlign: 'center', padding: 40 }}>
                 <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}><Icon name="chart" size={40} color="#4a4a5a" strokeWidth={1.5} /></div>
