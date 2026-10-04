@@ -10,6 +10,7 @@ interface Props {
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
   pending:   { label: 'Pending',   color: '#f59e0b', icon: '⏳' },
+  paid:      { label: 'Paid — to ship', color: '#FBBF24', icon: '💰' },
   confirmed: { label: 'Confirmed', color: '#3b82f6', icon: '✓'  },
   shipped:   { label: 'Shipped',   color: '#06b6d4', icon: '🚚' },
   delivered: { label: 'Delivered', color: '#10b981', icon: '✅' },
@@ -17,14 +18,14 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: string
   refunded:  { label: 'Refunded',  color: '#f97316', icon: '↩️' },
 };
 
+// What a seller may do, and only this — commerce-service enforces the same rule
+// (PATCH /commerce/orders/:id/status): a PAID order is shipped, a shipped one
+// delivered. There is no seller "Cancel" for a paid order: that is a refund, and
+// refunds are payment-service's — a button that only flipped the status would
+// leave the buyer's π where it is. An unpaid order never reaches this list.
 const NEXT_STATUS: Record<string, { status: string; label: string; icon: string }[]> = {
-  pending:   [
-    { status: 'confirmed', label: 'Confirm Order', icon: '✓'  },
-    { status: 'cancelled', label: 'Cancel Order',  icon: '❌' },
-  ],
-  confirmed: [
+  paid: [
     { status: 'shipped',   label: 'Mark Shipped',  icon: '🚚' },
-    { status: 'cancelled', label: 'Cancel Order',  icon: '❌' },
   ],
   shipped: [
     { status: 'delivered', label: 'Mark Delivered', icon: '✅' },
@@ -59,7 +60,8 @@ export function SellerOrderCard({ order, onUpdate }: Props) {
 
   const lower   = order.status.toLowerCase();
   const cfg     = STATUS_CONFIG[lower] ?? STATUS_CONFIG.pending;
-  const actions = NEXT_STATUS[lower] ?? [];
+  const shared  = order.soleSeller === false;
+  const actions = shared ? [] : NEXT_STATUS[lower] ?? [];
   const contact = order.product?.contact as { whatsapp?: string; telegram?: string; email?: string } | undefined;
 
   const handleUpdate = async (status: string) => {
@@ -195,6 +197,12 @@ export function SellerOrderCard({ order, onUpdate }: Props) {
                   {updating ? '⏳ Updating...' : 'Confirm'}
                 </button>
               </div>
+            </div>
+          )}
+
+          {shared && ['paid', 'shipped'].includes(lower) && (
+            <div style={{ fontSize: 11, color: '#6b6b7a', lineHeight: 1.5, marginBottom: 8 }}>
+              This order also has another seller&apos;s items, so its status can&apos;t be changed from here. Agree the delivery with the buyer.
             </div>
           )}
 

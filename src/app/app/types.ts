@@ -69,13 +69,16 @@ export interface Order {
   product_id:  string;
   product?:    Product;
   buyer_id:    string;
-  status:      'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
+  status:      'pending' | 'paid' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
   total:       number;
   payment_id?: string;
   txid?:       string;
   createdAt:   string;
   review?:     Review;
   timeline?:   OrderTimelineEvent[];
+  /** Seller view: false when the order also holds another seller's items — then no
+   *  one seller may move its status (commerce answers 403). */
+  soleSeller?: boolean;
 }
 
 export const CATEGORIES: ProductCategory[] = [
@@ -107,6 +110,7 @@ export const COUNTRIES = [
 
 export const STATUS_COLORS: Record<Order['status'], string> = {
   pending:   '#f0c040',
+  paid:      '#FBBF24',
   confirmed: '#7eb8f7',
   shipped:   '#b39ddb',
   delivered: '#7ee7c0',

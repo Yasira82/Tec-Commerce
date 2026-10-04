@@ -10,9 +10,56 @@ const CreateOrderSchema = z.object({
   order_id:   z.string().uuid().optional(),
 }).refine((b) => !!b.order_id || !!b.product_id, { message: 'product_id or order_id required' });
 
+interface SellerOrderRow {
+  id: string; status: string; buyer_id: string; payment_id?: string | null;
+  created_at: string; sole_seller?: boolean; seller_total?: string;
+  items?: { product_id: string; title: string; image_url?: string | null; metadata?: Record<string, unknown> | null }[];
+  timeline?: { status: string; note?: string | null; created_at?: string }[];
+}
+
+/** commerce's seller row → the card's shape. Its status vocabulary is the card's:
+ *  PAID / PROCESSING read as "paid" (to ship). */
+const toSellerCard = (o: SellerOrderRow) => {
+  const first = o.items?.[0];
+  const meta  = (first?.metadata ?? {}) as Record<string, unknown>;
+  const status = String(o.status).toUpperCase() === 'PROCESSING' ? 'paid' : String(o.status).toLowerCase();
+  return {
+    id:         o.id,
+    product_id: first?.product_id ?? '',
+    product:    first ? {
+      id:      first.product_id,
+      title:   (o.items?.length ?? 0) > 1 ? `${first.title} +${(o.items?.length ?? 1) - 1} more` : first.title,
+      images:  (meta.images as string[] | undefined) ?? (first.image_url ? [first.image_url] : []),
+      contact: meta.contact,
+    } : undefined,
+    buyer_id:   o.buyer_id,
+    status,
+    total:      Number(o.seller_total ?? 0),
+    payment_id: o.payment_id ?? undefined,
+    createdAt:  o.created_at,
+    soleSeller: o.sole_seller,
+    timeline:   (o.timeline ?? []).map((t) => ({ status: String(t.status).toLowerCase(), note: t.note ?? undefined, created_at: t.created_at })),
+  };
+};
+
 export const GET = createHandler({
   requireAuth: true,
   handler: async ({ ctx, req }) => {
+    // The seller's orders to fulfil — not their purchases. `?role=seller` used to be
+    // ignored, so the Sales tab listed what the seller had BOUGHT.
+    if (req.nextUrl.searchParams.get('role') === 'seller') {
+      const res = await gatewayGet(`${GATEWAY_URL}/api/commerce/orders/seller`, {
+        headers: {
+          Authorization:  `Bearer ${req.cookies.get('tec_access_token')?.value ?? ''}`,
+          'x-request-id': ctx.requestId,
+          ...(process.env.INTERNAL_SECRET && { 'x-internal-key': process.env.INTERNAL_SECRET }),
+        },
+      });
+      if (!res.ok) return { orders: [] };
+      const data = await res.json().catch(() => null) as { data?: { orders?: SellerOrderRow[] } } | null;
+      return { orders: (data?.data?.orders ?? []).map(toSellerCard) };
+    }
+
     const res = await gatewayGet(
       `${GATEWAY_URL}/api/v1/commerce/orders?buyer_id=${ctx.userId}`,
       {
