@@ -28,7 +28,7 @@ function snapshot(): Snapshot {
   let reported = false;
   try {
     hubEntry = sessionStorage.getItem('__tec_hub_entry') === '1';
-    reported = sessionStorage.getItem('tec_arrival_reported') === '1';
+    reported = Number(sessionStorage.getItem('tec_arrival_reported_at')) > 0;
   } catch { /* ignore */ }
   let referrer = '';
   try { referrer = document.referrer ? new URL(document.referrer).host : ''; } catch { /* ignore */ }
