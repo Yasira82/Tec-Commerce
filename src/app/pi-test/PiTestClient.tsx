@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { isPiBrowser, loginWithPi, getStoredUser, getAccessToken } from '@/lib-client/pi/pi-auth';
 import { createU2APayment } from '@/lib-client/pi/pi-payment';
+import { ArrivalTracePanel } from './ArrivalTracePanel';
 
 type LogEntry = { ts: string; type: 'info' | 'success' | 'error' | 'warn'; msg: string };
 
@@ -200,6 +201,8 @@ export function PiTestClient() {
           sandbox: {process.env.NEXT_PUBLIC_PI_SANDBOX ?? 'true'}
         </span>
       </div>
+
+      <ArrivalTracePanel />
 
       <section style={{ marginBottom: 16, padding: '12px 16px', border: '1px solid #3498db', borderRadius: 8 }}>
         <h2 style={{ fontSize: '1rem', marginBottom: 10, color: '#3498db' }}>Debug Tools</h2>
