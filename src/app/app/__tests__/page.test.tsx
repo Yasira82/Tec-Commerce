@@ -3,6 +3,9 @@ import { render, screen, waitFor, act }                     from '@testing-libra
 import React                                                 from 'react';
 
 vi.mock('@/lib-client/hooks/usePiAuth', () => ({ usePiAuth: vi.fn() }));
+// /app's default export is the SignInGate around the page (sign-in-gate.test.tsx covers it);
+// here the page itself is under test, so the gate passes everything through.
+vi.mock('@/components/pi/SignInGate', () => ({ SignInGate: ({ children }: { children: React.ReactNode }) => children }));
 vi.mock('@/components/ErrorBoundary',   () => ({
   ErrorBoundary: ({ children }: { children: React.ReactNode }) =>
     React.createElement(React.Fragment, null, children),

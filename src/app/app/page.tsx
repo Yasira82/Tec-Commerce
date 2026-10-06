@@ -1,4 +1,6 @@
 'use client';
+
+import { SignInGate } from '@/components/pi/SignInGate';
 // v1.2.1
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { usePiAuth }                                from '@/lib-client/hooks/usePiAuth';
@@ -532,9 +534,16 @@ function CommercePageInner() {
   );
 }
 
-export default function CommercePage() {
+function CommercePage() {
   // Fire-and-forget backend warmup (Railway cold starts — see /api/warmup).
   useEffect(() => { fetch('/api/warmup').catch(() => {}); }, []);
 
   return <ErrorBoundary><CommercePageInner /></ErrorBoundary>;
+}
+
+// The door: a sign-in button before any screen when there is no session
+// (SignInGate — C-123 §10; owner, 2026-10-06). A visit from the Hub arrives
+// signed in (§12) and goes straight through.
+export default function CommercePageGated() {
+  return <SignInGate><CommercePage /></SignInGate>;
 }
