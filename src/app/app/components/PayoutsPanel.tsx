@@ -30,6 +30,8 @@ const STATUS: Record<Payout['status'], { label: string; color: string }> = {
   OWED:   { label: 'Owed · not sent yet', color: '#FBBF24' },
   SENT:   { label: 'Sent',                color: '#22C55E' },
   DIRECT: { label: 'Settled to your wallet', color: '#8b8b9a' },
+  // tec-core-backend #398: moved into the seller's TEC balance — withdrawn from the Hub wallet.
+  CREDITED: { label: 'In your TEC balance', color: '#06B6D4' },
 };
 
 export function PayoutsPanel({ refreshKey = 0 }: { refreshKey?: number }) {

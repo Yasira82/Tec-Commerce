@@ -14,7 +14,7 @@ export interface Payout {
   seller_id:      string;
   amount:         string;
   currency:       string;
-  status:         'OWED' | 'SENT' | 'DIRECT';
+  status:         'OWED' | 'SENT' | 'DIRECT' | 'CREDITED';
   tx_id:          string | null;
   wallet_address: string | null;
   sold_at:        string | null;
@@ -27,6 +27,7 @@ export interface MyPayouts {
   direct:         boolean;
   owed:           string;
   sent:           string;
+  credited?:      string; // tec-core-backend #398 — in the seller's TEC balance
   payouts:        Payout[];
 }
 
