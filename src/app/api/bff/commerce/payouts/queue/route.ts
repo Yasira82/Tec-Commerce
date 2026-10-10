@@ -4,7 +4,7 @@ import { payoutsCall, type Payout } from '@/lib/bff/payouts';
 // GET /api/bff/commerce/payouts/queue?status=OWED — the admin's payout queue.
 // Admin is decided by commerce-service from the token (role: 'admin'); anyone else
 // gets its 403, which the screen reads as "this section is not for you".
-const STATUSES = ['OWED', 'SENT', 'DIRECT'];
+const STATUSES = ['OWED', 'SENT', 'DIRECT', 'CREDITED'];
 
 export const GET = createHandler({
   requireAuth: true,
