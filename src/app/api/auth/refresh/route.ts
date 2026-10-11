@@ -44,12 +44,28 @@ export async function POST(req: NextRequest) {
     } as const;
     res.cookies.set('tec_access_token', data.token, sessionCookieOpts);
     for (const name of ['tec_user', 'tec_csrf'] as const) {
-      const value = req.cookies.get(name)?.value;
+      const raw   = req.cookies.get(name)?.value;
+      const value = name === 'tec_user' ? onceEncoded(raw) : raw;
       if (value) res.cookies.set(name, value, sessionCookieOpts);
     }
 
     return res;
   } catch {
     return NextResponse.json({ error: 'Refresh failed' }, { status: 500 });
+  }
+}
+
+// `tec_user` as the browser must hold it: JSON, which `cookies.set` encodes once.
+// A copy written by the SSO landing before 2026-10-10 was encoded twice and reads
+// here as `%7B…`; re-issuing it unchanged renewed, for another day, a cookie that
+// getStoredUser() cannot read — a signed-in member shown the sign-in again.
+function onceEncoded(value: string | undefined): string | undefined {
+  if (!value || value.startsWith('{')) return value;
+  try {
+    const decoded = decodeURIComponent(value);
+    JSON.parse(decoded);
+    return decoded;
+  } catch {
+    return value;
   }
 }
