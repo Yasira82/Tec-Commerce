@@ -82,6 +82,12 @@ jobs:
 
           [ "$violations" -eq 0 ] && echo "Drift Detection OK — code matches KB claims" || exit 1
 
+      # App Excellence Standard (KB audits/APP_EXPANSION_ARCHITECTURE_2026-10-11.md §2).
+      # Plain Node, no install: prints the score and fails only when a check this app
+      # has already passed (`.app-scorecard.json`) stops passing — a ratchet.
+      - name: App Excellence scorecard
+        run: node scripts/app-scorecard.mjs
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -120,6 +126,11 @@ jobs:
           NEXT_PUBLIC_HUB_URL:      'https://hub.tecosystem.app'
           NEXT_PUBLIC_COMMERCE_URL: 'https://commerce.tecosystem.app'
           NEXT_PUBLIC_PI_APP_ID:    ${{ secrets.NEXT_PUBLIC_PI_APP_ID || 'commerce-app-id' }}
+
+      # Records /app's first-load JS against the 250 KB budget. Informational until E15
+      # is in the floor — the first reading is the baseline.
+      - name: App Excellence — performance budget
+        run: node scripts/app-scorecard.mjs --after-build
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
