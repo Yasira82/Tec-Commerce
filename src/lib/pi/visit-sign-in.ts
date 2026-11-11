@@ -26,6 +26,9 @@ type PiWindow = {
 let inflight: Promise<boolean> | null = null;
 let signedIn = false;
 let piToken: string | null = null;
+let piUser: string | null = null;
+/** The Pi username from the last handshake here, or null. Memory only. */
+export const piUsername = (): string | null => piUser;
 /** Pi's access token from the last handshake here, or null — for lib/pi/self-sign-in. Memory only. */
 export const piAccessToken = (): string | null => piToken;
 
@@ -68,6 +71,8 @@ export function piVisitSignIn(): Promise<boolean> {
     .then((result: unknown) => {
       const t = (result as { accessToken?: unknown } | null)?.accessToken;
       if (typeof t === 'string' && t) piToken = t;
+      const u = (result as { user?: { username?: unknown } } | null)?.user?.username;
+      if (typeof u === 'string' && u) piUser = u;
       writeTrace(SIGNIN_TRACE, { result: 'ok' }); markPiSignedIn(); return true;
     })
     .catch((e: unknown) => {
