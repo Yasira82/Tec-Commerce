@@ -23,30 +23,30 @@ const makeReq = (opts: {
 // ── protected routes ─────────────────────────────────────────────
 
 describe('middleware — protected routes', () => {
-  it('redirects /app when no token', () => {
-    const res = middleware(makeReq({ path: '/app/home' }));
+  it('redirects /app when no token', async () => {
+    const res = await middleware(makeReq({ path: '/app/home' }));
     expect(res.status).toBe(307);
     expect(res.headers.get('location')).toContain('redirect=%2Fapp%2Fhome');
   });
 
-  it('redirects /dashboard when token is empty string', () => {
-    const res = middleware(makeReq({
+  it('redirects /dashboard when token is empty string', async () => {
+    const res = await middleware(makeReq({
       path:    '/dashboard/stats',
       cookies: { tec_access_token: '' },
     }));
     expect(res.status).toBe(307);
   });
 
-  it('passes through /app when valid token present', () => {
-    const res = middleware(makeReq({
+  it('passes through /app when valid token present', async () => {
+    const res = await middleware(makeReq({
       path:    '/app/home',
       cookies: { tec_access_token: 'valid-tok' },
     }));
     expect(res.status).toBe(200);
   });
 
-  it('passes through /settings with token', () => {
-    const res = middleware(makeReq({
+  it('passes through /settings with token', async () => {
+    const res = await middleware(makeReq({
       path:    '/settings/account',
       cookies: { tec_access_token: 'tok' },
     }));
@@ -57,18 +57,18 @@ describe('middleware — protected routes', () => {
 // ── CSRF protection ──────────────────────────────────────────────
 
 describe('middleware — CSRF', () => {
-  it('skips CSRF for GET requests', () => {
-    const res = middleware(makeReq({ path: '/api/bff/commerce/products', method: 'GET' }));
+  it('skips CSRF for GET requests', async () => {
+    const res = await middleware(makeReq({ path: '/api/bff/commerce/products', method: 'GET' }));
     expect(res.status).toBe(200);
   });
 
-  it('returns 403 when CSRF tokens missing on protected POST', () => {
-    const res = middleware(makeReq({ path: '/api/bff/commerce/orders', method: 'POST' }));
+  it('returns 403 when CSRF tokens missing on protected POST', async () => {
+    const res = await middleware(makeReq({ path: '/api/bff/commerce/orders', method: 'POST' }));
     expect(res.status).toBe(403);
   });
 
-  it('passes when CSRF cookie matches header on protected POST', () => {
-    const res = middleware(makeReq({
+  it('passes when CSRF cookie matches header on protected POST', async () => {
+    const res = await middleware(makeReq({
       path:    '/api/bff/commerce/orders',
       method:  'POST',
       cookies: { tec_csrf: 'csrf-tok' },
@@ -77,8 +77,8 @@ describe('middleware — CSRF', () => {
     expect(res.status).toBe(200);
   });
 
-  it('returns 403 when CSRF cookie/header mismatch', () => {
-    const res = middleware(makeReq({
+  it('returns 403 when CSRF cookie/header mismatch', async () => {
+    const res = await middleware(makeReq({
       path:    '/api/bff/commerce/orders',
       method:  'POST',
       cookies: { tec_csrf: 'real-tok' },
@@ -87,16 +87,16 @@ describe('middleware — CSRF', () => {
     expect(res.status).toBe(403);
   });
 
-  it('enforces CSRF on /api/bff/payment/ routes', () => {
-    const res = middleware(makeReq({
+  it('enforces CSRF on /api/bff/payment/ routes', async () => {
+    const res = await middleware(makeReq({
       path:   '/api/bff/payment/approve',
       method: 'POST',
     }));
     expect(res.status).toBe(403);
   });
 
-  it('passes /api/bff/payment/ routes when CSRF token matches', () => {
-    const res = middleware(makeReq({
+  it('passes /api/bff/payment/ routes when CSRF token matches', async () => {
+    const res = await middleware(makeReq({
       path:    '/api/bff/payment/approve',
       method:  'POST',
       cookies: { tec_csrf: 'csrf-tok' },
@@ -105,8 +105,8 @@ describe('middleware — CSRF', () => {
     expect(res.status).toBe(200);
   });
 
-  it('passes non-CSRF-protected API routes', () => {
-    const res = middleware(makeReq({ path: '/api/bff/products', method: 'POST' }));
+  it('passes non-CSRF-protected API routes', async () => {
+    const res = await middleware(makeReq({ path: '/api/bff/products', method: 'POST' }));
     expect(res.status).toBe(200);
   });
 });
