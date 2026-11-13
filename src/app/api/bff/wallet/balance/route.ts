@@ -1,4 +1,5 @@
 import { createHandler, GATEWAY_URL } from '@/lib/bff/createHandler';
+import { gatewayFetch } from '@/lib/gateway-fetch';
 
 export const GET = createHandler({
   requireAuth: true,
@@ -10,7 +11,7 @@ export const GET = createHandler({
 
     let res: Response;
     try {
-      res = await fetch(
+      res = await gatewayFetch(
         `${GATEWAY_URL}/api/wallets?userId=${encodeURIComponent(ctx.userId)}`,
         {
           headers: {

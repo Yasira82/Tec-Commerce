@@ -1,5 +1,6 @@
 import { createHandler, GATEWAY_URL, gatewayGet, AppError } from '@/lib/bff/createHandler';
 import { z }                          from 'zod';
+import { gatewayFetch } from '@/lib/gateway-fetch';
 
 const CreateOrderSchema = z.object({
   product_id: z.string().uuid().optional(),
@@ -94,7 +95,7 @@ export const POST = createHandler({
       // commerce asks payment-service first: completed · this buyer · this order ·
       // the full amount — nothing here is taken on the client's word. "Not confirmed
       // yet" (503) is not a failure: the payment's own event settles the order.
-      const res = await fetch(
+      const res = await gatewayFetch(
         `${GATEWAY_URL}/api/commerce/orders/${encodeURIComponent(input.order_id)}/confirm`,
         { method: 'POST', headers, body: JSON.stringify({ payment_id: input.payment_id }) },
       ).catch(() => null);
@@ -109,7 +110,7 @@ export const POST = createHandler({
 
     // ✅ بعت product_id + buyer_id + payment_id في request واحد
     // Backend بيعمل order PAID مباشرة لو payment_id موجود
-    const res = await fetch(`${GATEWAY_URL}/api/v1/commerce/orders`, {
+    const res = await gatewayFetch(`${GATEWAY_URL}/api/v1/commerce/orders`, {
       method: 'POST',
       headers,
       body: JSON.stringify({

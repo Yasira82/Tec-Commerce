@@ -1,5 +1,6 @@
 import { createHandler, GATEWAY_URL, AppError } from '@/lib/bff/createHandler';
 import { z }                          from 'zod';
+import { gatewayFetch } from '@/lib/gateway-fetch';
 
 // PATCH /api/bff/commerce/orders/:id/status — the seller ships, then delivers.
 // commerce-service holds the rule (PAID → SHIPPED → DELIVERED, sole seller only,
@@ -20,7 +21,7 @@ export const PATCH = createHandler({
   handler: async ({ input, ctx, req }) => {
     const id = req.nextUrl.pathname.split('/orders/')[1]?.split('/status')[0] ?? '';
     if (!UUID.test(id)) throw new AppError('Invalid order id', 400, 'VALIDATION_ERROR');
-    const res = await fetch(`${GATEWAY_URL}/api/commerce/orders/${encodeURIComponent(id)}/status`, {
+    const res = await gatewayFetch(`${GATEWAY_URL}/api/commerce/orders/${encodeURIComponent(id)}/status`, {
       method: 'PATCH',
       headers: {
         'Content-Type':   'application/json',

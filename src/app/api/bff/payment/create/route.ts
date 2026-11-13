@@ -3,6 +3,7 @@ import { randomUUID }                from 'crypto';
 import { z } from 'zod';
 import { networkMetadata } from '@/lib/pi-network';
 import { placeHold, releaseHold } from '@/lib/order-hold';
+import { gatewayFetch } from '@/lib/gateway-fetch';
 
 const GW = process.env.API_GATEWAY_URL ?? '';
 
@@ -65,7 +66,7 @@ export async function POST(req: NextRequest) {
 
   let res: Response;
   try {
-    res = await fetch(`${GW}/api/payment/create`, {
+    res = await gatewayFetch(`${GW}/api/payment/create`, {
       method:  'POST',
       headers: {
         'Content-Type':    'application/json',

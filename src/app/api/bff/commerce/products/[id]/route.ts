@@ -1,5 +1,6 @@
 import { createHandler, GATEWAY_URL } from '@/lib/bff/createHandler';
 import { z }                          from 'zod';
+import { gatewayFetch } from '@/lib/gateway-fetch';
 
 const UpdateProductSchema = z.object({
   title:        z.string().min(1).optional(),
@@ -49,7 +50,7 @@ export const GET = createHandler({
   requireAuth: true,
   handler: async ({ ctx, req }) => {
     const id  = req.url.split('/').pop() ?? '';
-    const res = await fetch(`${GATEWAY_URL}/api/v1/commerce/products/${id}`, {
+    const res = await gatewayFetch(`${GATEWAY_URL}/api/v1/commerce/products/${id}`, {
       headers: {
         Authorization:    `Bearer ${req.cookies.get('tec_access_token')?.value ?? ''}`,
         'x-request-id':   ctx.requestId,
@@ -68,7 +69,7 @@ export const PATCH = createHandler({
   schema:      UpdateProductSchema,
   handler: async ({ input, ctx, req }) => {
     const id  = req.url.split('/').pop() ?? '';
-    const res = await fetch(`${GATEWAY_URL}/api/v1/commerce/products/${id}`, {
+    const res = await gatewayFetch(`${GATEWAY_URL}/api/v1/commerce/products/${id}`, {
       method: 'PATCH',
       headers: {
         'Content-Type':   'application/json',
@@ -91,7 +92,7 @@ export const DELETE = createHandler({
   requireAuth: true,
   handler: async ({ ctx, req }) => {
     const id  = req.url.split('/').pop() ?? '';
-    const res = await fetch(`${GATEWAY_URL}/api/v1/commerce/products/${id}`, {
+    const res = await gatewayFetch(`${GATEWAY_URL}/api/v1/commerce/products/${id}`, {
       method: 'DELETE',
       headers: {
         Authorization:    `Bearer ${req.cookies.get('tec_access_token')?.value ?? ''}`,

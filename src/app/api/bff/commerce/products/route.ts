@@ -1,5 +1,6 @@
 import { createHandler, GATEWAY_URL, gatewayGet } from '@/lib/bff/createHandler';
 import { z }                          from 'zod';
+import { gatewayFetch } from '@/lib/gateway-fetch';
 
 const CreateProductSchema = z.object({
   title:        z.string().min(1),
@@ -110,7 +111,7 @@ export const POST = createHandler({
   requireAuth: true,
   schema:      CreateProductSchema,
   handler: async ({ input, ctx, req }) => {
-    const res = await fetch(`${GATEWAY_URL}/api/v1/commerce/products`, {
+    const res = await gatewayFetch(`${GATEWAY_URL}/api/v1/commerce/products`, {
       method: 'POST',
       headers: {
         'Content-Type':   'application/json',

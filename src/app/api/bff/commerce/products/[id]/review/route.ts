@@ -1,5 +1,6 @@
 import { createHandler, GATEWAY_URL } from '@/lib/bff/createHandler';
 import { z }                          from 'zod';
+import { gatewayFetch } from '@/lib/gateway-fetch';
 
 const ReviewSchema = z.object({
   rating:  z.number().int().min(1).max(5),
@@ -16,7 +17,7 @@ export const POST = createHandler({
 
     if (!orderId) throw new Error('Order ID is required');
 
-    const res = await fetch(
+    const res = await gatewayFetch(
       `${GATEWAY_URL}/api/v1/commerce/orders/${encodeURIComponent(orderId)}/review`,
       {
         method:  'POST',
