@@ -2,6 +2,7 @@ import { z }           from 'zod';
 import { NextRequest }  from 'next/server';
 import { randomUUID } from 'crypto';
 import { jwtVerify }   from 'jose';
+import { gatewayFetch } from '@/lib/gateway-fetch';
 
 export class AppError extends Error {
   constructor(
@@ -129,7 +130,7 @@ export function createHandler<TInput = Record<string, never>, TOutput = unknown>
 // IDEMPOTENT GETs only, absorb exactly one such blip with a short backoff.
 // Never used for POST/mutations (no double-submit risk).
 export async function gatewayGet(url: string, init: RequestInit = {}): Promise<Response> {
-  const attempt = () => fetch(url, { ...init, method: 'GET', cache: 'no-store' });
+  const attempt = () => gatewayFetch(url, { ...init, method: 'GET', cache: 'no-store' });
   try {
     const res = await attempt();
     if (res.status !== 502 && res.status !== 504) return res;

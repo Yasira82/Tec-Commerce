@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { AppError, GATEWAY_URL, gatewayGet, type BFFContext } from '@/lib/bff/createHandler';
+import { gatewayFetch } from '@/lib/gateway-fetch';
 
 // Seller payouts (F2, Tec-Commerce #78 · tec-core-backend #369). The BFF only
 // CARRIES these: commerce-service derives the seller from the verified token and
@@ -46,7 +47,7 @@ export async function payoutsCall<T>(
   const url = `${GATEWAY_URL}/api/commerce/payouts${path}`;
   const res = method === 'GET'
     ? await gatewayGet(url, { headers: headers(req, ctx) })
-    : await fetch(url, { method, headers: headers(req, ctx), body: JSON.stringify(body ?? {}), cache: 'no-store' });
+    : await gatewayFetch(url, { method, headers: headers(req, ctx), body: JSON.stringify(body ?? {}), cache: 'no-store' });
   const json = await res.json().catch(() => ({})) as { data?: T; message?: string | string[] };
   if (!res.ok) {
     const msg = Array.isArray(json.message) ? json.message.join(' ') : json.message;
