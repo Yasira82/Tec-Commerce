@@ -12,7 +12,9 @@
 // Read as text rather than executed: these are `'use client'` page modules
 // whose imports pull in the whole app shell, and the defect is a literal in one
 // branch — exactly what a text assertion pins and a render test does not.
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+// The first use, as auth-service answers it (src/lib/sso-once.ts; sso-once.test.ts covers the rest).
+vi.mock('@/lib/sso-once', () => ({ firstUse: vi.fn(async () => 'first') }));
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 

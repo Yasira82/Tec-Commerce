@@ -24,7 +24,9 @@
 // So this is not "replace the global everywhere". Doing that to middleware
 // breaks it the other way. The boundary is the rule, and it is what this file
 // pins.
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+// The first use, as auth-service answers it (src/lib/sso-once.ts; sso-once.test.ts covers the rest).
+vi.mock('@/lib/sso-once', () => ({ firstUse: vi.fn(async () => 'first') }));
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
